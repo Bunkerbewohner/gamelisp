@@ -13,6 +13,10 @@ type List struct {
 	*list.List
 }
 
+type Dict struct {
+	entries map[Data]Data
+}
+
 type String struct {
 	Value string
 }
@@ -59,6 +63,27 @@ func (l List) String() string {
 	return buffer.String()
 }
 
+func (d Dict) String() string {
+	var buffer bytes.Buffer
+	buffer.WriteString("{")
+	i := 0
+
+	for key, value := range d.entries {
+		if i > 0 {
+			buffer.WriteString(" ")
+		}
+
+		buffer.WriteString(key.String())
+		buffer.WriteString(" ")
+		buffer.WriteString(value.String())
+
+		i++
+	}
+
+	buffer.WriteString("}")
+	return buffer.String()
+}
+
 func (b Bool) String() string {
 	if b.Value {
 		return "true"
@@ -78,5 +103,11 @@ func (f Float) String() string {
 func CreateList() List {
 	return List{
 		List: list.New(),
+	}
+}
+
+func CreateDict() Dict {
+	return Dict{
+		entries: make(map[Data]Data),
 	}
 }

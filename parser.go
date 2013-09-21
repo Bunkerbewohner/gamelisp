@@ -29,6 +29,21 @@ func ParseList(input string, offset int) (Data, int) {
 	return list, readPos + 1
 }
 
+func ParseDict(input string, offset int) (Data, int) {
+	dict := CreateDict()
+	_, end, readPos := getDelimeters(input, offset)
+
+	for readPos < len(input)-1 && input[readPos] != end {
+		key, keyEnd := ParseAny(input, readPos)
+		value, valueEnd := ParseAny(input, keyEnd)
+
+		dict.entries[key] = value
+		readPos = valueEnd + 1
+	}
+
+	return dict, readPos
+}
+
 func ParseString(input string, offset int) (Data, int) {
 	str := stringRegex.FindString(input[offset:])
 	length := len(str)
@@ -37,7 +52,7 @@ func ParseString(input string, offset int) (Data, int) {
 		panic(fmt.Sprintf("Failed to parse string in input \"%s\"", input[offset:]))
 	}
 
-	return String{str[1 : length-2]}, offset + length
+	return String{str[1 : length-1]}, offset + length
 }
 
 func ParseSymbol(input string, offset int) (Data, int) {
@@ -75,13 +90,16 @@ func ParseNumber(input string, offset int) (Data, int) {
 
 // Parses any data value
 func ParseAny(input string, offset int) (Data, int) {
+	// ignore whitespace
 	for input[offset] == ' ' || input[offset] == '\t' || input[offset] == '\r' || input[offset] == 'n' {
 		offset++
 	}
 
 	switch input[offset] {
-	case '(', '[', '{':
+	case '(', '[':
 		return ParseList(input, offset)
+	case '{':
+		return ParseDict(input, offset)
 	case '"', '\'':
 		return ParseString(input, offset)
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
