@@ -12,12 +12,14 @@ func main() {
 		fmt.Printf("\n> ")
 		line, err := reader.ReadString('\n')
 
-		if err != nil {
+		if err != nil || line[0:4] == "exit" {
 			break // EOF
 		}
 
 		data, _ := ParseAny(line, 0)
-		fmt.Printf(data.String())
+		evaled := Evaluate(data, MainContext)
+
+		fmt.Printf(evaled.String())
 	}
 
 	fmt.Printf("GAME OVER.\n")

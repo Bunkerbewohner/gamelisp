@@ -9,6 +9,14 @@ type Data interface {
 	String() string
 }
 
+type Caller interface {
+	Call(code List, context *Context) Data
+}
+
+type NativeFunction struct {
+	Function func(List, *Context) Data
+}
+
 type List struct {
 	*list.List
 }
@@ -109,5 +117,21 @@ func CreateList() List {
 func CreateDict() Dict {
 	return Dict{
 		entries: make(map[Data]Data),
+	}
+}
+
+func (fn NativeFunction) Call(code List, context *Context) Data {
+	return fn.Function(code, context)
+}
+
+func (fn NativeFunction) String() string {
+	return "native function"
+}
+
+func (ls List) Second() Data {
+	if data, ok := ls.Front().Next().Value.(Data); ok {
+		return data
+	} else {
+		return nil
 	}
 }
