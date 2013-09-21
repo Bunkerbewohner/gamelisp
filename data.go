@@ -14,6 +14,8 @@ type Caller interface {
 }
 
 type NativeFunction struct {
+	// Native functions receive a list of arguments, the first being the name under
+	// which the function itself was called
 	Function func(List, *Context) Data
 }
 
@@ -128,10 +130,24 @@ func (fn NativeFunction) String() string {
 	return "native function"
 }
 
-func (ls List) Second() Data {
-	if data, ok := ls.Front().Next().Value.(Data); ok {
-		return data
-	} else {
-		return nil
+func (ls List) Get(n int) Data {
+	i := 0
+	for e := ls.Front(); e != nil; e = e.Next() {
+		if i == n {
+			if data, ok := e.Value.(Data); ok {
+				return data
+			}
+		}
+		i++
 	}
+
+	return nil
+}
+
+func (ls List) Second() Data {
+	return ls.Get(1)
+}
+
+func (ls List) Third() Data {
+	return ls.Get(2)
 }

@@ -28,6 +28,13 @@ func Evaluate(code Data, context *Context) Data {
 		}
 
 		panic("Expression is not a valid function invocation: " + code.String())
+	case Symbol:
+		if value, ok := context.symbols[t.Value]; ok {
+			return value
+		} else {
+			return t
+		}
+
 	default:
 		return code
 	}
@@ -36,6 +43,7 @@ func Evaluate(code Data, context *Context) Data {
 func CreateMainContext() *Context {
 	context := NewContext()
 	context.symbols["type"] = NativeFunction{_type}
+	context.symbols["def"] = NativeFunction{def}
 
 	return context
 }

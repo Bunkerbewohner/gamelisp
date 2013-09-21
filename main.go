@@ -12,7 +12,7 @@ func main() {
 		fmt.Printf("\n> ")
 		line, err := reader.ReadString('\n')
 
-		if err != nil || line[0:4] == "exit" {
+		if err != nil || (len(line) >= 4 && line[0:4] == "exit") {
 			break // EOF
 		}
 
