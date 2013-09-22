@@ -14,8 +14,17 @@ func NewContext() *Context {
 }
 
 func Evaluate(code Data, context *Context) (Data, error) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("%v in %v", e, code)
+		}
+	}()
+
 	switch t := code.(type) {
 	case List:
+		if t.Len() == 0 {
+			return nil, errors.New("invalid function invocation")
+		}
 		// first expression must be a symbol
 		symbol, ok := t.Front().Value.(Symbol)
 		if ok {
@@ -42,16 +51,18 @@ func Evaluate(code Data, context *Context) (Data, error) {
 		} else {
 			return nil, errors.New(fmt.Sprintf("%s is not defined", t))
 		}
-
-	default:
-		return code, nil
 	}
+
+	return code, nil
 }
 
 func CreateMainContext() *Context {
 	context := NewContext()
+	context.symbols["def"] = NativeFunctionB{_def}
+
 	context.symbols["type"] = NativeFunction{_type}
-	context.symbols["def"] = NativeFunction{def}
+	context.symbols["list"] = NativeFunction{_list}
+	context.symbols["print"] = NativeFunction{_print}
 
 	return context
 }

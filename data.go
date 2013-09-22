@@ -19,6 +19,11 @@ type NativeFunction struct {
 	Function func(List, *Context) Data
 }
 
+type NativeFunctionB struct {
+	// Same as NativeFunction, except it doesnt expect evaluated arguments
+	Function func(List, *Context) Data
+}
+
 type List struct {
 	*list.List
 }
@@ -97,9 +102,9 @@ func (d Dict) String() string {
 func (b Bool) String() string {
 	if b.Value {
 		return "true"
-	} else {
-		return "false"
 	}
+
+	return "false"
 }
 
 func (i Int) String() string {
@@ -123,16 +128,19 @@ func CreateDict() Dict {
 }
 
 func (fn NativeFunction) Call(code List, context *Context) Data {
-	defer func() {
-		if e := recover(); e != nil {
-			fmt.Printf("function execution failed: %v", e)
-		}
-	}()
-
-	return fn.Function(code, context)
+	args := code.Map(__evalArgs(context))
+	return fn.Function(args, context)
 }
 
 func (fn NativeFunction) String() string {
+	return "native function"
+}
+
+func (fn NativeFunctionB) Call(code List, context *Context) Data {
+	return fn.Function(code, context)
+}
+
+func (fn NativeFunctionB) String() string {
 	return "native function"
 }
 
@@ -166,4 +174,47 @@ func (ls List) RequireArity(n int) {
 	if ls.Len() < n {
 		panic(fmt.Sprintf("%d elements expected, only %d provided", n, ls.Len()))
 	}
+}
+
+func (ls List) Foreach(f func(a Data, i int)) {
+	i := 0
+	for e := ls.Front(); e != nil; e = e.Next() {
+		switch t := e.Value.(type) {
+		case Data:
+			f(t, i)
+		}
+		i++
+	}
+}
+
+func (ls List) Filter(f func(a Data, i int) bool) List {
+	list := CreateList()
+	i := 0
+
+	for e := ls.Front(); e != nil; e = e.Next() {
+		switch t := e.Value.(type) {
+		case Data:
+			if f(t, i) {
+				list.PushBack(t)
+			}
+		}
+		i++
+	}
+
+	return list
+}
+
+func (ls List) Map(f func(a Data, i int) Data) List {
+	list := CreateList()
+	i := 0
+
+	for e := ls.Front(); e != nil; e = e.Next() {
+		switch t := e.Value.(type) {
+		case Data:
+			list.PushBack(f(t, i))
+		}
+		i++
+	}
+
+	return list
 }

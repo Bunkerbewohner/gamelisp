@@ -28,9 +28,9 @@ func Parse(input string) (Data, error) {
 
 	if data == nil {
 		return nil, errors.New("Failed to parse string")
-	} else {
-		return data, nil
-	}
+	} 
+		
+	return data, nil
 }
 
 func ParseList(input string, offset int) (Data, int) {
@@ -131,10 +131,10 @@ func ParseAny(input string, offset int) (Data, int) {
 			return ParseNumber(input, offset)
 		} else {
 			return ParseSymbol(input, offset)
-		}
-	default:
-		return ParseSymbol(input, offset)
+		}	
 	}
+
+	return ParseSymbol(input, offset)
 }
 
 func getDelimeters(input string, offset int) (startDelim byte, endDelim byte, readPos int) {
