@@ -123,6 +123,12 @@ func CreateDict() Dict {
 }
 
 func (fn NativeFunction) Call(code List, context *Context) Data {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("function execution failed: %v", e)
+		}
+	}()
+
 	return fn.Function(code, context)
 }
 
@@ -144,10 +150,20 @@ func (ls List) Get(n int) Data {
 	return nil
 }
 
+func (ls List) First() Data {
+	return ls.Get(0)
+}
+
 func (ls List) Second() Data {
 	return ls.Get(1)
 }
 
 func (ls List) Third() Data {
 	return ls.Get(2)
+}
+
+func (ls List) RequireArity(n int) {
+	if ls.Len() < n {
+		panic(fmt.Sprintf("%d elements expected, only %d provided", n, ls.Len()))
+	}
 }

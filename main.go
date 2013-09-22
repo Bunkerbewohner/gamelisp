@@ -4,8 +4,10 @@ import "fmt"
 import "os"
 import "bufio"
 
+const VERSION = "0.1"
+
 func main() {
-	fmt.Printf("GameLISP v0.1\n")
+	fmt.Printf("GameLISP %s\n", VERSION)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -29,7 +31,9 @@ func main() {
 
 		// evaluate the expressions
 		if result, err := Evaluate(data, MainContext); err == nil {
-			fmt.Printf(result.String())
+			if result != nil {
+				fmt.Printf(result.String())
+			}
 		} else {
 			fmt.Println(err.Error())
 		}

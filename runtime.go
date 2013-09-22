@@ -26,16 +26,21 @@ func Evaluate(code Data, context *Context) (Data, error) {
 				fn, ok := fn.(Caller)
 				if ok {
 					return fn.Call(t, context), nil
+				} else {
+					return nil, errors.New(fmt.Sprintf("%s is not a function", t.Get(0)))
 				}
+			} else {
+				return nil, errors.New(fmt.Sprintf("%s is not defined", t.Get(0)))
 			}
+		} else {
+			return nil, errors.New(fmt.Sprintf("%s is not a symbol", t.Get(0)))
 		}
-
-		return nil, errors.New(fmt.Sprintf("Not a function: %s\n", t.Get(0)))
 	case Symbol:
+		// look up the symbol and returns its value
 		if value, ok := context.symbols[t.Value]; ok {
 			return value, nil
 		} else {
-			return t, nil
+			return nil, errors.New(fmt.Sprintf("%s is not defined", t))
 		}
 
 	default:
