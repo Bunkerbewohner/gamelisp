@@ -9,17 +9,30 @@ func main() {
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
+		// read commands from stdin
 		fmt.Printf("\n> ")
 		line, err := reader.ReadString('\n')
 
+		// check for exit command
 		if err != nil || (len(line) >= 4 && line[0:4] == "exit") {
 			break // EOF
 		}
 
-		data, _ := ParseAny(line, 0)
-		evaled := Evaluate(data, MainContext)
+		// parse code into AST
+		data, err := Parse(line)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		} else if data == nil {
+			continue
+		}
 
-		fmt.Printf(evaled.String())
+		// evaluate the expressions
+		if result, err := Evaluate(data, MainContext); err == nil {
+			fmt.Printf(result.String())
+		} else {
+			fmt.Println(err.Error())
+		}
 	}
 
 	fmt.Printf("GAME OVER.\n")

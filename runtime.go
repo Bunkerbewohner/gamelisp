@@ -1,5 +1,8 @@
 package main
 
+import "errors"
+import "fmt"
+
 type Context struct {
 	symbols map[string]Data
 }
@@ -10,7 +13,7 @@ func NewContext() *Context {
 	}
 }
 
-func Evaluate(code Data, context *Context) Data {
+func Evaluate(code Data, context *Context) (Data, error) {
 	switch t := code.(type) {
 	case List:
 		// first expression must be a symbol
@@ -22,21 +25,21 @@ func Evaluate(code Data, context *Context) Data {
 				// check if we can call it as a function
 				fn, ok := fn.(Caller)
 				if ok {
-					return fn.Call(t, context)
+					return fn.Call(t, context), nil
 				}
 			}
 		}
 
-		panic("Expression is not a valid function invocation: " + code.String())
+		return nil, errors.New(fmt.Sprintf("Not a function: %s\n", t.Get(0)))
 	case Symbol:
 		if value, ok := context.symbols[t.Value]; ok {
-			return value
+			return value, nil
 		} else {
-			return t
+			return t, nil
 		}
 
 	default:
-		return code
+		return code, nil
 	}
 }
 

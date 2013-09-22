@@ -4,6 +4,7 @@ import "fmt"
 import "regexp"
 import "strconv"
 import "strings"
+import "errors"
 
 var whitespaceRegex = regexp.MustCompile("^\\s+")
 var stringRegex = regexp.MustCompile("^\"(?:\\.|[^\\\"]|\"\")*\"")
@@ -16,12 +17,33 @@ var symbolRegex = regexp.MustCompile("^[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 // the parsed data and the next reading position
 type ParserFunc func(input string, offset int) (Data, int)
 
+func Parse(input string) (Data, error) {
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Printf("Parser Error: %v", e)
+		}
+	}()
+
+	data, _ := ParseAny(input, 0)
+
+	if data == nil {
+		return nil, errors.New("Failed to parse string")
+	} else {
+		return data, nil
+	}
+}
+
 func ParseList(input string, offset int) (Data, int) {
 	list := CreateList()
 	_, end, readPos := getDelimeters(input, offset)
 
 	for readPos < len(input)-1 && input[readPos] != end {
 		item, endPos := ParseAny(input, readPos)
+
+		if item == nil {
+			return nil, readPos + 1
+		}
+
 		readPos = endPos
 		list.PushBack(item)
 	}
