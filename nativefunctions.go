@@ -33,7 +33,13 @@ func _type(code List, context *Context) Data {
 func _def(code List, context *Context) Data {
 	code.RequireArity(3)
 
-	symbol := code.Second()
+	// the symbol referring to the defined value
+	symbol, ok := code.Second().(Symbol)
+	if !ok {
+		panic("First argument to def must be a symbol")
+	}
+
+	// get the value that shall be associated to the symbol
 	value := code.Third()
 	value, err := Evaluate(value, context)
 
@@ -54,6 +60,50 @@ func _list(code List, context *Context) Data {
 
 	result.evaluated = true
 	return result
+}
+
+func _dict(code List, context *Context) Data {
+	dict := CreateDict()
+
+	if (code.Len()-1)%2 == 1 {
+		panic("Dictionary requires an even number of arguments")
+	}
+
+	for e := code.Front().Next(); e != nil; e = e.Next() {
+		key, _ := e.Value.(Data)
+		value, _ := e.Next().Value.(Data)
+		e = e.Next()
+
+		dict.entries[key] = value
+	}
+
+	return dict
+}
+
+func _symbol(code List, context *Context) Data {
+	code.RequireArity(2)
+
+	str, ok := code.Second().(String)
+	if ok {
+		return Symbol{str.Value}
+	}
+
+	panic("symbol expects string as first argument")
+}
+
+func _keyword(code List, context *Context) Data {
+	code.RequireArity(2)
+
+	str, ok := code.Second().(String)
+	if ok {
+		if str.Value[0] != ':' {
+			str.Value = ":" + str.Value
+		}
+
+		return Keyword{str.Value}
+	}
+
+	panic("keyword expects string as first argument")
 }
 
 func _print(code List, context *Context) Data {

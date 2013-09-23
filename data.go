@@ -41,6 +41,10 @@ type Symbol struct {
 	Value string
 }
 
+type Keyword struct {
+	Value string
+}
+
 type Bool struct {
 	Value bool
 }
@@ -59,6 +63,10 @@ func (s String) String() string {
 
 func (s Symbol) String() string {
 	return s.Value
+}
+
+func (k Keyword) String() string {
+	return k.Value
 }
 
 func (l List) String() string {
@@ -129,7 +137,7 @@ func CreateDict() Dict {
 }
 
 func (fn NativeFunction) Call(code List, context *Context) Data {
-	if !code.evaluated {
+	if !code.evaluated || true {
 		args := code.Map(__evalArgs(context))
 		return fn.Function(args, context)
 	}

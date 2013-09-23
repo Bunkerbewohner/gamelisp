@@ -11,6 +11,7 @@ var stringRegex = regexp.MustCompile("^\"(?:\\.|[^\\\"]|\"\")*\"")
 var intRegex = regexp.MustCompile("^-?[\\d,]+")
 var floatRegex = regexp.MustCompile("^-?[\\d,]+[.]\\d*")
 var symbolRegex = regexp.MustCompile("^[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
+var keywordRegex = regexp.MustCompile("^:[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 
 // A parser function receives an input string and a read offset
 // to parse string representations of data or code. it returns
@@ -28,14 +29,22 @@ func Parse(input string) (Data, error) {
 
 	if data == nil {
 		return nil, errors.New("Failed to parse string")
-	} 
-		
+	}
+
 	return data, nil
 }
 
 func ParseList(input string, offset int) (Data, int) {
 	list := CreateList()
-	_, end, readPos := getDelimeters(input, offset)
+	start, end, readPos := getDelimeters(input, offset)
+
+	if start == '[' {
+		// [x1 x2 ... xn] denotes the datatype list (not to be executed)
+		list.PushBack(Symbol{"list"})
+	} else if start == '{' {
+		// {} denotes dictionaries
+		list.PushBack(Symbol{"dict"})
+	}
 
 	for readPos < len(input)-1 && input[readPos] != end {
 		item, endPos := ParseAny(input, readPos)
@@ -56,14 +65,17 @@ func ParseDict(input string, offset int) (Data, int) {
 	_, end, readPos := getDelimeters(input, offset)
 
 	for readPos < len(input)-1 && input[readPos] != end {
+		if input[readPos] == ',' {
+			readPos++
+		}
 		key, keyEnd := ParseAny(input, readPos)
 		value, valueEnd := ParseAny(input, keyEnd)
 
 		dict.entries[key] = value
-		readPos = valueEnd + 1
+		readPos = valueEnd
 	}
 
-	return dict, readPos
+	return dict, readPos + 1
 }
 
 func ParseString(input string, offset int) (Data, int) {
@@ -88,6 +100,16 @@ func ParseSymbol(input string, offset int) (Data, int) {
 	return Symbol{str}, offset + length
 }
 
+func ParseKeyword(input string, offset int) (Data, int) {
+	str := symbolRegex.FindString(input[offset:])
+	length := len(str)
+
+	if length == 0 {
+		panic(fmt.Sprintf("Failed to parse keyword in input \"%s\"", input[offset:]))
+	}
+
+	return Keyword{str}, offset + length
+}
 func ParseNumber(input string, offset int) (Data, int) {
 	// try float first
 	floatStr := floatRegex.FindString(input[offset:])
@@ -118,10 +140,8 @@ func ParseAny(input string, offset int) (Data, int) {
 	}
 
 	switch input[offset] {
-	case '(', '[':
+	case '(', '[', '{':
 		return ParseList(input, offset)
-	case '{':
-		return ParseDict(input, offset)
 	case '"', '\'':
 		return ParseString(input, offset)
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9':
@@ -131,7 +151,9 @@ func ParseAny(input string, offset int) (Data, int) {
 			return ParseNumber(input, offset)
 		} else {
 			return ParseSymbol(input, offset)
-		}	
+		}
+	case ':':
+		return ParseKeyword(input, offset)
 	}
 
 	return ParseSymbol(input, offset)

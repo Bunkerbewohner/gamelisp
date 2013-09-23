@@ -23,6 +23,7 @@ func Evaluate(code Data, context *Context) (Data, error) {
 	switch t := code.(type) {
 	case List:
 		if t.evaluated {
+			// if the list was already evaluated just return its contents as is
 			return code, nil
 		} else if t.Len() == 0 {
 			return nil, errors.New("invalid function invocation")
@@ -47,6 +48,8 @@ func Evaluate(code Data, context *Context) (Data, error) {
 		} else {
 			return nil, errors.New(fmt.Sprintf("%s is not a symbol", t.Get(0)))
 		}
+	case Keyword:
+		return t, nil
 	case Symbol:
 		// look up the symbol and returns its value
 		if value, ok := context.symbols[t.Value]; ok {
@@ -62,9 +65,13 @@ func Evaluate(code Data, context *Context) (Data, error) {
 func CreateMainContext() *Context {
 	context := NewContext()
 	context.symbols["def"] = NativeFunctionB{_def}
-
 	context.symbols["type"] = NativeFunction{_type}
+
+	context.symbols["symbol"] = NativeFunction{_symbol}
+	context.symbols["keyword"] = NativeFunction{_keyword}
 	context.symbols["list"] = NativeFunction{_list}
+	context.symbols["dict"] = NativeFunction{_dict}
+
 	context.symbols["print"] = NativeFunction{_print}
 
 	context.symbols["foreach"] = NativeFunction{_foreach}
