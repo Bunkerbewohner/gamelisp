@@ -106,6 +106,36 @@ func _keyword(code List, context *Context) Data {
 	panic("keyword expects string as first argument")
 }
 
+func _get(code List, context *Context) Data {
+	code.RequireArity(3)
+
+	list, isList := code.Second().(List)
+	dict, isDict := code.Second().(Dict)
+	if !isList && !isDict {
+		panic("get expects first argument to be a dictionary or list")
+	}
+
+	if isList {
+		index, ok := code.Third().(Int)
+		if !ok {
+			panic("get expects second argument to be an integer if used on lists")
+		}
+
+		return list.Get(int(index.Value))
+	}
+
+	if isDict {
+		key := code.Third()
+		value, ok := dict.entries[key]
+		if !ok {
+			panic(fmt.Sprintf("unknown key '%s'", key.String()))
+		}
+		return value
+	}
+
+	return nil
+}
+
 func _print(code List, context *Context) Data {
 	code.RequireArity(2)
 
