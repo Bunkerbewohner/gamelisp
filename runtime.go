@@ -22,9 +22,12 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 	switch t := code.(type) {
 	case List:
-		if t.Len() == 0 {
+		if t.evaluated {
+			return code, nil
+		} else if t.Len() == 0 {
 			return nil, errors.New("invalid function invocation")
 		}
+
 		// first expression must be a symbol
 		symbol, ok := t.Front().Value.(Symbol)
 		if ok {

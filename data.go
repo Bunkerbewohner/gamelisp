@@ -26,6 +26,7 @@ type NativeFunctionB struct {
 
 type List struct {
 	*list.List
+	evaluated bool
 }
 
 type Dict struct {
@@ -128,8 +129,12 @@ func CreateDict() Dict {
 }
 
 func (fn NativeFunction) Call(code List, context *Context) Data {
-	args := code.Map(__evalArgs(context))
-	return fn.Function(args, context)
+	if !code.evaluated {
+		args := code.Map(__evalArgs(context))
+		return fn.Function(args, context)
+	}
+
+	return fn.Function(code, context)
 }
 
 func (fn NativeFunction) String() string {

@@ -48,9 +48,12 @@ func _def(code List, context *Context) Data {
 }
 
 func _list(code List, context *Context) Data {
-	return code.Filter(func(data Data, i int) bool {
+	result := code.Filter(func(data Data, i int) bool {
 		return i > 0
 	})
+
+	result.evaluated = true
+	return result
 }
 
 func _print(code List, context *Context) Data {
