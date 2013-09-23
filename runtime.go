@@ -64,6 +64,9 @@ func CreateMainContext() *Context {
 	context.symbols["list"] = NativeFunction{_list}
 	context.symbols["print"] = NativeFunction{_print}
 
+	context.symbols["foreach"] = NativeFunction{_foreach}
+	context.symbols["map"] = NativeFunction{_map}
+
 	return context
 }
 

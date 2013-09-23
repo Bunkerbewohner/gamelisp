@@ -60,12 +60,49 @@ func _print(code List, context *Context) Data {
 		if i > 0 {
 			switch t := data.(type) {
 			case String:
-				fmt.Print(t.Value)
+				fmt.Println(t.Value)
 			default:
-				fmt.Print(data.String())
+				fmt.Println(data.String())
 			}
 		}
 	})
+
+	return nil
+}
+
+func _foreach(code List, context *Context) Data {
+	code.RequireArity(3)
+
+	items, gotItems := code.Second().(List)
+	fn, gotFn := code.Third().(Caller)
+
+	if gotItems && gotFn {
+		items.Foreach(func(data Data, i int) {
+			args := CreateList()
+			args.PushBack(fn)
+			args.PushBack(data)
+
+			fn.Call(args, context)
+		})
+	}
+
+	return nil
+}
+
+func _map(code List, context *Context) Data {
+	code.RequireArity(3)
+
+	fn, gotFn := code.Second().(Caller)
+	items, gotItems := code.Third().(List)
+
+	if gotFn && gotItems {
+		return items.Map(func(data Data, i int) Data {
+			args := CreateList()
+			args.PushBack(fn)
+			args.PushBack(data)
+			return fn.Call(args, context)
+		})
+	}
 
 	return nil
 }
