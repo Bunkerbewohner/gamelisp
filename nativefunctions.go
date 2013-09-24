@@ -296,3 +296,20 @@ func _filter(code List, context *Context) Data {
 
 	return Nothing{}
 }
+
+// (len list) - Returns number of items in list
+// (len dict) - Returns number of key-value pairs in dictionary
+func _len(code List, context *Context) Data {
+	code.RequireArity(2)
+
+	list, okList := code.Second().(List)
+	dict, okDict := code.Second().(Dict)
+
+	if okList {
+		return Int{list.Len()}
+	} else if okDict {
+		return Int{len(dict.entries)}
+	}
+
+	panic("First arguments must be a list or dictionary")
+}

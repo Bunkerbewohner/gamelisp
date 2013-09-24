@@ -30,7 +30,7 @@ func (c *Context) LookUp(symbol Symbol) Data {
 func Evaluate(code Data, context *Context) (Data, error) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("%v in %v", e, code)
+			fmt.Printf("%v in %v\n", e, code)
 		}
 	}()
 
@@ -100,6 +100,7 @@ func CreateMainContext() *Context {
 	context.symbols["get"] = NativeFunction{_get}
 	context.symbols["put"] = NativeFunction{_put}
 	context.symbols["slice"] = NativeFunction{_slice}
+	context.symbols["len"] = NativeFunction{_len}
 
 	return context
 }
