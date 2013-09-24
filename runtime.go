@@ -102,6 +102,7 @@ func CreateMainContext() *Context {
 	context.symbols["put"] = NativeFunction{_put}
 	context.symbols["slice"] = NativeFunction{_slice}
 	context.symbols["len"] = NativeFunction{_len}
+	context.symbols["append"] = NativeFunction{_append}
 
 	context.symbols["+"] = NativeFunction{_plus}
 	context.symbols["-"] = NativeFunction{_minus}

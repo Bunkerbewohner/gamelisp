@@ -43,7 +43,7 @@ Gamelisp uses a simplyfied data system with only a hand full of types.
 Arithmetic
 ----------
 
-Basic arithmetic has been implemented for Int and Float. Additionally String supports multiplication like in Python for repeating strings and addition for concatenation.
+Basic arithmetic has been implemented for Int and Float. Additionally String supports multiplication like in Python for repeating strings and addition for concatenation. Plus (+) can also be used to join lists or items to lists. As a general rule the + function never modifies its arguments and always returns a new object.
 
 ````clojure
 (+ 30 5) -> 35
@@ -53,6 +53,8 @@ Basic arithmetic has been implemented for Int and Float. Additionally String sup
 (/ 8 5.) -> 1.6
 (* "W" 3) -> "WWW" 
 (+ "Hello #" (/ 10 2)) -> "Hello #5"
+(+ [1 2] 3) -> [1 2 3]
+(+ [1 2] [3 4]) -> [1 2 3 4]
 ````
 
 Core Functions (so far)
@@ -70,5 +72,6 @@ Core Functions (so far)
 (put dict key value) ; Add or set dictionary entry
 (put list index value) ; Set list entry
 (len dictOrList) ; Get the length of dict, list or string
-(slice list startIncl [endExcl]) ; Get a slice of a list
+(slice list startIncl [endExcl]) ; Get a slice of a list, allows negative indices
+(append list xs1 [xs2 [...]]) ; Appends lists of items to given list and returns the modified list
 ````

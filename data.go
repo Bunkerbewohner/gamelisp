@@ -261,8 +261,25 @@ func (ls List) Foreach(f func(a Data, i int)) {
 }
 
 func (ls List) Slice(startIncl int, endExcl int) List {
+	if startIncl < 0 {
+		startIncl += ls.Len()
+	}
+	if endExcl < 0 {
+		endExcl += ls.Len()
+	}
+
 	return ls.Filter(func(a Data, i int) bool {
 		return i >= startIncl && i < endExcl
+	})
+}
+
+func (ls List) SliceFrom(startIncl int) List {
+	if startIncl < 0 {
+		startIncl += ls.Len()
+	}
+
+	return ls.Filter(func(a Data, i int) bool {
+		return i >= startIncl
 	})
 }
 
