@@ -71,6 +71,15 @@ func (s String) Multiply(a Data) Data {
 	panic("Strings can only be multiplied with Ints")
 }
 
+func (s String) Plus(a Data) Data {
+	switch t := a.(type) {
+	case String:
+		return String{s.Value + t.Value}
+	default:
+		return String{s.Value + t.String()}
+	}
+}
+
 func (i Int) Divide(a Data) Data {
 	switch num := a.(type) {
 	case Int:

@@ -304,14 +304,17 @@ func _len(code List, context *Context) Data {
 
 	list, okList := code.Second().(List)
 	dict, okDict := code.Second().(Dict)
+	str, okStr := code.Second().(String)
 
 	if okList {
 		return Int{list.Len()}
 	} else if okDict {
 		return Int{len(dict.entries)}
+	} else if okStr {
+		return Int{len(str.Value)}
 	}
 
-	panic("First arguments must be a list or dictionary")
+	panic("First arguments must be a list, dictionary or string")
 }
 
 // (str x) - returns the string representation of x
