@@ -8,21 +8,6 @@ type Data interface {
 	String() string
 }
 
-type Caller interface {
-	Call(code List, context *Context) Data
-}
-
-type NativeFunction struct {
-	// Native functions receive a list of arguments, the first being the name under
-	// which the function itself was called
-	Function func(List, *Context) Data
-}
-
-type NativeFunctionB struct {
-	// Same as NativeFunction, except it doesnt expect evaluated arguments
-	Function func(List, *Context) Data
-}
-
 type List struct {
 	*list.List
 	evaluated bool
@@ -128,31 +113,18 @@ func CreateList() List {
 	}
 }
 
+func MakeList(args ...Data) List {
+	list := CreateList()
+	for arg := range args {
+		list.PushBack(arg)
+	}
+	return list
+}
+
 func CreateDict() Dict {
 	return Dict{
 		entries: make(map[Data]Data),
 	}
-}
-
-func (fn NativeFunction) Call(code List, context *Context) Data {
-	if !code.evaluated || true {
-		args := code.Map(__evalArgs(context))
-		return fn.Function(args, context)
-	}
-
-	return fn.Function(code, context)
-}
-
-func (fn NativeFunction) String() string {
-	return "native function"
-}
-
-func (fn NativeFunctionB) Call(code List, context *Context) Data {
-	return fn.Function(code, context)
-}
-
-func (fn NativeFunctionB) String() string {
-	return "native function"
 }
 
 func (ls List) Plus(a Data) Data {
