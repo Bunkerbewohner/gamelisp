@@ -57,6 +57,9 @@ type Float struct {
 	Value float64
 }
 
+type Nothing struct {
+}
+
 func (s String) String() string {
 	return fmt.Sprintf("\"%s\"", s.Value)
 }
@@ -67,6 +70,10 @@ func (s Symbol) String() string {
 
 func (k Keyword) String() string {
 	return k.Value
+}
+
+func (n Nothing) String() string {
+	return "Nothing"
 }
 
 func (l List) String() string {
@@ -168,7 +175,7 @@ func (ls List) Get(n int) Data {
 		i++
 	}
 
-	return nil
+	return Nothing{}
 }
 
 func (ls List) First() Data {

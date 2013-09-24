@@ -1,5 +1,10 @@
 package main
 
+//
+// This file contains elemental functions defined natively in Go,
+// which all user-defined code and extra libraries are based on
+//
+
 import "reflect"
 import "fmt"
 
@@ -25,11 +30,13 @@ func __evalArgs(context *Context) func(data Data, i int) Data {
 	}
 }
 
+// (type x) - Returns the type of x as a string
 func _type(code List, context *Context) Data {
 	code.RequireArity(2)
 	return String{reflect.TypeOf(code.Second()).String()}
 }
 
+// (def symbol value) - Defines a new symbol and assigns the value
 func _def(code List, context *Context) Data {
 	code.RequireArity(3)
 
@@ -37,6 +44,11 @@ func _def(code List, context *Context) Data {
 	symbol, ok := code.Second().(Symbol)
 	if !ok {
 		panic("First argument to def must be a symbol")
+	}
+
+	// check if that symbol is already defined in the current context
+	if context.IsDefined(symbol) && code.First().String() != "def!" {
+		panic("Symbol is already defined. Use def! if you want to overwrite in case of an existing symbol")
 	}
 
 	// get the value that shall be associated to the symbol
@@ -53,6 +65,7 @@ func _def(code List, context *Context) Data {
 	return value
 }
 
+// returns a list of items
 func _list(code List, context *Context) Data {
 	result := code.Filter(func(data Data, i int) bool {
 		return i > 0
@@ -62,6 +75,8 @@ func _list(code List, context *Context) Data {
 	return result
 }
 
+// creates a dictionary. expects even number of arguments
+// (dict :key1 value1 :key2 value2 ...)
 func _dict(code List, context *Context) Data {
 	dict := CreateDict()
 
@@ -80,6 +95,7 @@ func _dict(code List, context *Context) Data {
 	return dict
 }
 
+// (symbol name) - return a symbol with given name
 func _symbol(code List, context *Context) Data {
 	code.RequireArity(2)
 
@@ -91,6 +107,7 @@ func _symbol(code List, context *Context) Data {
 	panic("symbol expects string as first argument")
 }
 
+// (keyword name) - return a keyword with given name (prepended with a colon if not supplied)
 func _keyword(code List, context *Context) Data {
 	code.RequireArity(2)
 
@@ -106,6 +123,9 @@ func _keyword(code List, context *Context) Data {
 	panic("keyword expects string as first argument")
 }
 
+// (get dict key)	- gets an entry from a dictionary
+// (get list index)	- gets an entry from a list
+// returns Nothing if entry doesn't exist
 func _get(code List, context *Context) Data {
 	code.RequireArity(3)
 
@@ -128,12 +148,28 @@ func _get(code List, context *Context) Data {
 		key := code.Third()
 		value, ok := dict.entries[key]
 		if !ok {
-			panic(fmt.Sprintf("unknown key '%s'", key.String()))
+			return Nothing{}
 		}
 		return value
 	}
 
-	return nil
+	return Nothing{}
+}
+
+// (put dict key value) - sets the dictionary entry "key" to value
+func _put(code List, context *Context) Data {
+	code.RequireArity(3)
+	dict, isDict := code.Second().(Dict)
+	if !isDict {
+		panic("First arguments expected to be a dictionary")
+	}
+
+	key := code.Get(2)
+	value := code.Get(3)
+
+	dict.entries[key] = value
+
+	return value
 }
 
 func _print(code List, context *Context) Data {

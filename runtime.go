@@ -13,6 +13,20 @@ func NewContext() *Context {
 	}
 }
 
+func (c *Context) IsDefined(symbol Symbol) bool {
+	_, defined := c.symbols[symbol.Value]
+	return defined
+}
+
+func (c *Context) LookUp(symbol Symbol) Data {
+	val, defined := c.symbols[symbol.Value]
+	if defined {
+		return val
+	} else {
+		return Nothing{}
+	}
+}
+
 func Evaluate(code Data, context *Context) (Data, error) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -64,13 +78,18 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 func CreateMainContext() *Context {
 	context := NewContext()
+	context.symbols["Nothing"] = Nothing{}
+	context.symbols["true"] = Bool{true}
+	context.symbols["false"] = Bool{false}
+
 	context.symbols["def"] = NativeFunctionB{_def}
+	context.symbols["def!"] = NativeFunctionB{_def}
 	context.symbols["type"] = NativeFunction{_type}
 
-	context.symbols["symbol"] = NativeFunction{_symbol}
-	context.symbols["keyword"] = NativeFunction{_keyword}
-	context.symbols["list"] = NativeFunction{_list}
-	context.symbols["dict"] = NativeFunction{_dict}
+	context.symbols["Symbol"] = NativeFunction{_symbol}
+	context.symbols["Keyword"] = NativeFunction{_keyword}
+	context.symbols["List"] = NativeFunction{_list}
+	context.symbols["Dict"] = NativeFunction{_dict}
 
 	context.symbols["print"] = NativeFunction{_print}
 
@@ -78,6 +97,7 @@ func CreateMainContext() *Context {
 	context.symbols["map"] = NativeFunction{_map}
 
 	context.symbols["get"] = NativeFunction{_get}
+	context.symbols["put"] = NativeFunction{_put}
 
 	return context
 }
