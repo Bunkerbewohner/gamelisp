@@ -86,6 +86,8 @@ func CreateMainContext() *Context {
 	context.symbols["Keyword"] = DataType{"Keyword"}
 	context.symbols["List"] = DataType{"List"}
 	context.symbols["Dict"] = DataType{"Dict"}
+	context.symbols["NativeFunction"] = DataType{"NativeFunction"}
+	context.symbols["NativeFunctionB"] = DataType{"NativeFunctionB"}
 
 	context.symbols["Nothing"] = Nothing{}
 	context.symbols["true"] = Bool{true}

@@ -339,3 +339,11 @@ func (x Dict) GetType() DataType {
 func (x Nothing) GetType() DataType {
 	return DataType{"Nothing"}
 }
+
+func (x NativeFunction) GetType() DataType {
+	return MainContext.LookUp(Symbol{"NativeFunction"}).(DataType)
+}
+
+func (x NativeFunctionB) GetType() DataType {
+	return MainContext.LookUp(Symbol{"NativeFunctionB"}).(DataType)
+}
