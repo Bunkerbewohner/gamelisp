@@ -8,6 +8,14 @@ type Data interface {
 	String() string
 }
 
+type DataTyper interface {
+	GetType() DataType
+}
+
+type DataType struct {
+	TypeName string
+}
+
 type List struct {
 	*list.List
 	evaluated bool
@@ -34,6 +42,10 @@ type Bool struct {
 }
 
 type Nothing struct {
+}
+
+func (t DataType) String() string {
+	return t.TypeName
 }
 
 func (s String) String() string {
@@ -293,4 +305,37 @@ func (ls List) Map(f func(a Data, i int) Data) List {
 	}
 
 	return list
+}
+
+func (x Int) GetType() DataType {
+	datatype := MainContext.LookUp(Symbol{"Int"}).(DataType)
+	return datatype
+}
+
+func (x Float) GetType() DataType {
+	return MainContext.LookUp(Symbol{"Float"}).(DataType)
+}
+
+func (x Bool) GetType() DataType {
+	return MainContext.LookUp(Symbol{"Bool"}).(DataType)
+}
+
+func (x Symbol) GetType() DataType {
+	return MainContext.LookUp(Symbol{"Symbol"}).(DataType)
+}
+
+func (x Keyword) GetType() DataType {
+	return MainContext.LookUp(Symbol{"Keyword"}).(DataType)
+}
+
+func (x List) GetType() DataType {
+	return MainContext.LookUp(Symbol{"List"}).(DataType)
+}
+
+func (x Dict) GetType() DataType {
+	return MainContext.LookUp(Symbol{"Dict"}).(DataType)
+}
+
+func (x Nothing) GetType() DataType {
+	return DataType{"Nothing"}
 }

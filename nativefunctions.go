@@ -34,6 +34,10 @@ func __evalArgs(context *Context) func(data Data, i int) Data {
 // (type x) - Returns the type of x as a string
 func _type(code List, context *Context) Data {
 	code.RequireArity(2)
+	if typer, ok := code.Second().(DataTyper); ok {
+		return typer.GetType()
+	}
+
 	name := reflect.TypeOf(code.Second()).String()
 	return String{strings.Replace(name, "main.", "", 1)}
 }

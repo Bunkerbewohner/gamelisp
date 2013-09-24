@@ -78,6 +78,15 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 func CreateMainContext() *Context {
 	context := NewContext()
+	context.symbols["Int"] = DataType{"Int"}
+	context.symbols["Float"] = DataType{"Float"}
+	context.symbols["Bool"] = DataType{"Bool"}
+	context.symbols["String"] = DataType{"String"}
+	context.symbols["Symbol"] = DataType{"Symbol"}
+	context.symbols["Keyword"] = DataType{"Keyword"}
+	context.symbols["List"] = DataType{"List"}
+	context.symbols["Dict"] = DataType{"Dict"}
+
 	context.symbols["Nothing"] = Nothing{}
 	context.symbols["true"] = Bool{true}
 	context.symbols["false"] = Bool{false}
@@ -87,10 +96,10 @@ func CreateMainContext() *Context {
 	context.symbols["type"] = NativeFunction{_type}
 	context.symbols["str"] = NativeFunction{_str}
 
-	context.symbols["Symbol"] = NativeFunction{_symbol}
-	context.symbols["Keyword"] = NativeFunction{_keyword}
-	context.symbols["List"] = NativeFunction{_list}
-	context.symbols["Dict"] = NativeFunction{_dict}
+	context.symbols["symbol"] = NativeFunction{_symbol}
+	context.symbols["keyword"] = NativeFunction{_keyword}
+	context.symbols["list"] = NativeFunction{_list}
+	context.symbols["dict"] = NativeFunction{_dict}
 
 	context.symbols["print"] = NativeFunction{_print}
 

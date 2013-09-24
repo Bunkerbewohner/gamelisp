@@ -16,7 +16,20 @@ type NativeFunctionB struct {
 	Function func(List, *Context) Data
 }
 
+// data type for user-defined gamelisp functions
 type Function struct {
+	Name     string
+	Patterns []DispatchPattern
+	Parent   *Function
+}
+
+type DispatchPattern struct {
+	// a pattern for each expected argument
+	ArgPatterns []ArgumentPattern
+}
+
+type ArgumentPattern struct {
+	ExpectedType *DataType
 }
 
 func (fn NativeFunction) Call(code List, context *Context) Data {

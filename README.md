@@ -23,7 +23,7 @@ The syntax is inspired by LISP and Clojure.
 Data Types
 ----------
 
-Gamelisp uses a simplyfied data system with only a hand full of types.
+Gamelisp uses a simplified data system with only a hand full of types.
 
 ````clojure
 (map type [
@@ -34,10 +34,10 @@ Gamelisp uses a simplyfied data system with only a hand full of types.
 	[1 2 3] 
 	{:version 1.0}
 	:name
-	(symbol x)
+	(symbol "x")
 	Nothing])
 
--> ["String", "Bool", "Int", "Float", "List", "Dict", "Keyword", "Symbol", "Nothing"]
+-> [String, Bool, Int, Float, List, Dict, Keyword, Symbol, Nothing]
 ````
 
 Arithmetic
@@ -75,4 +75,11 @@ Core Functions (so far)
 (slice list startIncl [endExcl]) ; Get a slice of a list, allows negative indices
 (append list xs1 [xs2 [...]]) ; Appends lists of items to given list and returns the modified list
 (prepend list xs1 [xs2 [...]]); Analogous to append, just prepending instead
+````
+
+Function Definition and Multiple Dispatch
+-----------------------------------------
+
+````clojure
+
 ````

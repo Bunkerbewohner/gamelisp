@@ -40,10 +40,10 @@ func ParseList(input string, offset int) (Data, int) {
 
 	if start == '[' {
 		// [x1 x2 ... xn] denotes the datatype list (not to be executed)
-		list.PushBack(Symbol{"List"})
+		list.PushBack(Symbol{"list"})
 	} else if start == '{' {
 		// {} denotes dictionaries
-		list.PushBack(Symbol{"Dict"})
+		list.PushBack(Symbol{"dict"})
 	}
 
 	for readPos < len(input)-1 && input[readPos] != end {
