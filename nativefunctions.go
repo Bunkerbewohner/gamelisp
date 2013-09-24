@@ -217,6 +217,24 @@ func _append(code List, context *Context) Data {
 	panic("First argument must be a list!")
 }
 
+// (prepend list xs1 xs2 ...) - prepends lists of items to the list and returns the modified list
+func _prepend(code List, context *Context) Data {
+	code.RequireArity(3)
+	list, isList := code.Get(1).(List)
+	if isList {
+		code.SliceFrom(2).Foreach(func(data Data, i int) {
+			if datas, ok := data.(List); ok {
+				list.PushFrontList(datas.List)
+			} else {
+				list.PushFront(data)
+			}
+		})
+		return list
+	}
+
+	panic("First argument must be a list!")
+}
+
 // (slice list startInl endExcl) - get all items between startIncl and endExcl
 // (slice list 0 endExcl) - get all items till end
 // (slice list startIncl) - get all items from startIncl till end
