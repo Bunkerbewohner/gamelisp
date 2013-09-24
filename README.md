@@ -17,7 +17,7 @@ The syntax is inspired by LISP and Clojure.
 (def! x 2) -> 2 ; overwrites existing variable value
 (def name "gamelisp") -> "gamelisp"
 
-(print (+ "Hello " name) -> Hello gamelisp
+(print (+ "Hello " name)) -> Hello gamelisp
 ````
 
 Data Types
