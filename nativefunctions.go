@@ -6,6 +6,7 @@ package main
 //
 
 import "reflect"
+import "strings"
 import "fmt"
 
 //
@@ -33,7 +34,8 @@ func __evalArgs(context *Context) func(data Data, i int) Data {
 // (type x) - Returns the type of x as a string
 func _type(code List, context *Context) Data {
 	code.RequireArity(2)
-	return String{reflect.TypeOf(code.Second()).String()}
+	name := reflect.TypeOf(code.Second()).String()
+	return String{strings.Replace(name, "main.", "", 1)}
 }
 
 // (def symbol value) - Defines a new symbol and assigns the value
