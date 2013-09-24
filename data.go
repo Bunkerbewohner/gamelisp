@@ -1,7 +1,6 @@
 package main
 
 import "container/list"
-import "strconv"
 import "fmt"
 import "bytes"
 
@@ -47,14 +46,6 @@ type Keyword struct {
 
 type Bool struct {
 	Value bool
-}
-
-type Int struct {
-	Value int
-}
-
-type Float struct {
-	Value float64
 }
 
 type Nothing struct {
@@ -121,14 +112,6 @@ func (b Bool) String() string {
 	}
 
 	return "false"
-}
-
-func (i Int) String() string {
-	return strconv.FormatInt(int64(i.Value), 10)
-}
-
-func (f Float) String() string {
-	return strconv.FormatFloat(f.Value, 'g', -1, 64)
 }
 
 func CreateList() List {

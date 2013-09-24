@@ -85,6 +85,7 @@ func CreateMainContext() *Context {
 	context.symbols["def"] = NativeFunctionB{_def}
 	context.symbols["def!"] = NativeFunctionB{_def}
 	context.symbols["type"] = NativeFunction{_type}
+	context.symbols["str"] = NativeFunction{_str}
 
 	context.symbols["Symbol"] = NativeFunction{_symbol}
 	context.symbols["Keyword"] = NativeFunction{_keyword}
@@ -101,6 +102,11 @@ func CreateMainContext() *Context {
 	context.symbols["put"] = NativeFunction{_put}
 	context.symbols["slice"] = NativeFunction{_slice}
 	context.symbols["len"] = NativeFunction{_len}
+
+	context.symbols["+"] = NativeFunction{_plus}
+	context.symbols["-"] = NativeFunction{_minus}
+	context.symbols["*"] = NativeFunction{_multiply}
+	context.symbols["/"] = NativeFunction{_divide}
 
 	return context
 }

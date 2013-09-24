@@ -313,3 +313,9 @@ func _len(code List, context *Context) Data {
 
 	panic("First arguments must be a list or dictionary")
 }
+
+// (str x) - returns the string representation of x
+func _str(code List, context *Context) Data {
+	code.RequireArity(2)
+	return String{code.Second().String()}
+}
