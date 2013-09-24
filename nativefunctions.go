@@ -161,14 +161,24 @@ func _put(code List, context *Context) Data {
 	code.RequireArity(3)
 	dict, isDict := code.Second().(Dict)
 	if !isDict {
-		panic("First arguments expected to be a dictionary")
+		list, isList := code.Second().(List)
+		if isList {
+			index, isInt := code.Get(2).(Int)
+			if isInt {
+				return list.Set(index.Value, code.Get(3))
+			} else {
+				panic("Put requires index as second argument")
+			}
+		} else {
+			panic("First argument must be a list or dictionary")
+		}
+		panic("First argument must be a list or dictionary")
 	}
 
 	key := code.Get(2)
 	value := code.Get(3)
 
 	dict.entries[key] = value
-
 	return value
 }
 

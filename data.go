@@ -147,6 +147,49 @@ func (fn NativeFunctionB) String() string {
 	return "native function"
 }
 
+func (ls List) Plus(a Data) Data {
+	switch t := a.(type) {
+	case List:
+		copy := CreateList()
+		copy.PushBackList(ls.List)
+		copy.PushBackList(t.List)
+		return copy
+	default:
+		copy := CreateList()
+		copy.PushBackList(ls.List)
+		copy.PushBack(t)
+		return copy
+	}
+
+	return Nothing{}
+}
+
+func (ls List) Set(n int, value Data) Data {
+	// positive indices = offset from front
+	if n >= 0 {
+		i := 0
+		for e := ls.Front(); e != nil; e = e.Next() {
+			if i == n {
+				e.Value = value
+				return value
+			}
+			i++
+		}
+	}
+
+	// negative indices = offset from back
+	i := -1
+	for e := ls.Back(); e != nil; e = e.Prev() {
+		if i == n {
+			e.Value = value
+			return value
+		}
+		i--
+	}
+
+	return Nothing{}
+}
+
 func (ls List) Get(n int) Data {
 	// positive indices = offset from front
 	if n >= 0 {
