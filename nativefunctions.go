@@ -189,6 +189,37 @@ func _print(code List, context *Context) Data {
 	return nil
 }
 
+// (slice list startInl endExcl) - get all items between startIncl and endExcl
+// (slice list 0 endExcl) - get all items till end
+// (slice list startIncl) - get all items from startIncl till end
+func _slice(code List, context *Context) Data {
+	code.RequireArity(3)
+
+	list, isList := code.Second().(List)
+	if !isList {
+		panic("First argument expected to be list")
+	}
+
+	if code.Len() == 4 {
+		start, startInt := code.Get(2).(Int)
+		end, endInt := code.Get(3).(Int)
+		if !startInt || !endInt {
+			panic("Indices must be integers!")
+		}
+
+		return list.Slice(start.Value, end.Value)
+	} else if code.Len() == 3 {
+		start, startInt := code.Get(2).(Int)
+		if !startInt {
+			panic("Index must be integer!")
+		}
+
+		return list.Slice(start.Value, list.Len())
+	}
+
+	panic("Invalid invocation")
+}
+
 func _foreach(code List, context *Context) Data {
 	code.RequireArity(3)
 

@@ -123,9 +123,9 @@ func ParseNumber(input string, offset int) (Data, int) {
 	// integer second
 	intStr := intRegex.FindString(input[offset:])
 	if intStr != "" {
-		intVal, err := strconv.ParseInt(strings.Replace(intStr, ",", "", -1), 10, 64)
+		intVal, err := strconv.ParseInt(strings.Replace(intStr, ",", "", -1), 10, 32)
 		if err == nil {
-			return Int{intVal}, offset + len(intStr)
+			return Int{int(intVal)}, offset + len(intStr)
 		}
 	}
 

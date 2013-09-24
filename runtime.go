@@ -99,6 +99,7 @@ func CreateMainContext() *Context {
 
 	context.symbols["get"] = NativeFunction{_get}
 	context.symbols["put"] = NativeFunction{_put}
+	context.symbols["slice"] = NativeFunction{_slice}
 
 	return context
 }

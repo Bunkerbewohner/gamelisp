@@ -50,7 +50,7 @@ type Bool struct {
 }
 
 type Int struct {
-	Value int64
+	Value int
 }
 
 type Float struct {
@@ -124,7 +124,7 @@ func (b Bool) String() string {
 }
 
 func (i Int) String() string {
-	return strconv.FormatInt(i.Value, 10)
+	return strconv.FormatInt(int64(i.Value), 10)
 }
 
 func (f Float) String() string {
