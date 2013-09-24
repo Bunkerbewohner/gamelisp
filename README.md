@@ -74,4 +74,5 @@ Core Functions (so far)
 (len dictOrList) ; Get the length of dict, list or string
 (slice list startIncl [endExcl]) ; Get a slice of a list, allows negative indices
 (append list xs1 [xs2 [...]]) ; Appends lists of items to given list and returns the modified list
+(prepend list xs1 [xs2 [...]]); Analogous to append, just prepending instead
 ````
