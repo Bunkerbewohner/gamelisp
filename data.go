@@ -69,7 +69,11 @@ func (n Nothing) String() string {
 
 func (l List) String() string {
 	var buffer bytes.Buffer
-	buffer.WriteString("(")
+	if l.evaluated {
+		buffer.WriteString("[")
+	} else {
+		buffer.WriteString("(")
+	}
 
 	for e := l.Front(); e != nil; e = e.Next() {
 		if buffer.Len() > 1 {
@@ -81,7 +85,11 @@ func (l List) String() string {
 		}
 	}
 
-	buffer.WriteString(")")
+	if l.evaluated {
+		buffer.WriteString("]")
+	} else {
+		buffer.WriteString(")")
+	}
 	return buffer.String()
 }
 
