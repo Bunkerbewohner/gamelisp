@@ -223,5 +223,45 @@ func _map(code List, context *Context) Data {
 		})
 	}
 
-	return nil
+	if !gotFn {
+		panic("First argument expected to be a function")
+	}
+
+	if !gotItems {
+		panic("Second argument expected to be a list")
+	}
+
+	return Nothing{}
+}
+
+// (filter f list) - Returns a list of items for which f returns true
+func _filter(code List, context *Context) Data {
+	code.RequireArity(3)
+	fn, gotFn := code.Second().(Caller)
+	items, gotItems := code.Third().(List)
+
+	if gotFn && gotItems {
+		return items.Filter(func(data Data, i int) bool {
+			args := CreateList()
+			args.PushBack(fn)
+			args.PushBack(data)
+			result := fn.Call(args, context)
+			value, isBool := result.(Bool)
+			if isBool {
+				return value.Value
+			}
+
+			panic("Filter function does not return Bool")
+		})
+	}
+
+	if !gotFn {
+		panic("First arguments expected to be a function")
+	}
+
+	if !gotItems {
+		panic("Second argument expected to be a list")
+	}
+
+	return Nothing{}
 }

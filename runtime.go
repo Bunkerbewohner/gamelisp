@@ -95,6 +95,7 @@ func CreateMainContext() *Context {
 
 	context.symbols["foreach"] = NativeFunction{_foreach}
 	context.symbols["map"] = NativeFunction{_map}
+	context.symbols["filter"] = NativeFunction{_filter}
 
 	context.symbols["get"] = NativeFunction{_get}
 	context.symbols["put"] = NativeFunction{_put}

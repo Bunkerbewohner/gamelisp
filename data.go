@@ -165,17 +165,44 @@ func (fn NativeFunctionB) String() string {
 }
 
 func (ls List) Get(n int) Data {
-	i := 0
-	for e := ls.Front(); e != nil; e = e.Next() {
+	// positive indices = offset from front
+	if n >= 0 {
+		i := 0
+		for e := ls.Front(); e != nil; e = e.Next() {
+			if i == n {
+				if data, ok := e.Value.(Data); ok {
+					return data
+				}
+			}
+			i++
+		}
+	}
+
+	// negative indices = offset from back
+	i := -1
+	for e := ls.Back(); e != nil; e = e.Prev() {
 		if i == n {
 			if data, ok := e.Value.(Data); ok {
 				return data
 			}
 		}
-		i++
+		i--
 	}
 
 	return Nothing{}
+}
+
+func (ls List) Last() Data {
+	last := ls.Back()
+	if last == nil {
+		return Nothing{}
+	} else {
+		if data, ok := last.Value.(Data); ok {
+			return data
+		} else {
+			panic("List contains invalid data type")
+		}
+	}
 }
 
 func (ls List) First() Data {
@@ -205,6 +232,12 @@ func (ls List) Foreach(f func(a Data, i int)) {
 		}
 		i++
 	}
+}
+
+func (ls List) Slice(startIncl int, endExcl int) List {
+	return ls.Filter(func(a Data, i int) bool {
+		return i >= startIncl && i < endExcl
+	})
 }
 
 func (ls List) Filter(f func(a Data, i int) bool) List {
