@@ -5,16 +5,25 @@ import "fmt"
 
 type Context struct {
 	symbols map[string]Data
+	parent  *Context
 }
 
 func NewContext() *Context {
 	return &Context{
 		make(map[string]Data),
+		nil,
 	}
+}
+
+func (c *Context) Define(symbol Symbol, value Data) {
+	c.symbols[symbol.Value] = value
 }
 
 func (c *Context) IsDefined(symbol Symbol) bool {
 	_, defined := c.symbols[symbol.Value]
+	if !defined && c.parent != nil {
+		return c.parent.IsDefined(symbol)
+	}
 	return defined
 }
 
@@ -22,6 +31,8 @@ func (c *Context) LookUp(symbol Symbol) Data {
 	val, defined := c.symbols[symbol.Value]
 	if defined {
 		return val
+	} else if c.parent != nil {
+		return c.parent.LookUp(symbol)
 	} else {
 		return Nothing{}
 	}
@@ -111,6 +122,8 @@ func CreateMainContext() *Context {
 	context.symbols["def!"] = NativeFunctionB{_def}
 	context.symbols["type"] = NativeFunction{_type}
 	context.symbols["str"] = NativeFunction{_str}
+	context.symbols["fn"] = NativeFunctionB{_fn}
+	context.symbols["defn"] = NativeFunctionB{_defn}
 
 	context.symbols["symbol"] = NativeFunction{_symbol}
 	context.symbols["keyword"] = NativeFunction{_keyword}

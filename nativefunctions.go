@@ -5,8 +5,6 @@ package main
 // which all user-defined code and extra libraries are based on
 //
 
-import "reflect"
-import "strings"
 import "fmt"
 
 //
@@ -34,12 +32,7 @@ func __evalArgs(context *Context) func(data Data, i int) Data {
 // (type x) - Returns the type of x as a string
 func _type(code List, context *Context) Data {
 	code.RequireArity(2)
-	if typer, ok := code.Second().(DataTyper); ok {
-		return typer.GetType()
-	}
-
-	name := reflect.TypeOf(code.Second()).String()
-	return String{strings.Replace(name, "main.", "", 1)}
+	return code.Second().GetType()
 }
 
 // (def symbol value) - Defines a new symbol and assigns the value
@@ -62,13 +55,48 @@ func _def(code List, context *Context) Data {
 	value, err := Evaluate(value, context)
 
 	if err == nil {
-		context.symbols[symbol.String()] = value
+		context.Define(symbol, value)
 	} else {
 		fmt.Printf(err.Error())
 		return nil
 	}
 
 	return value
+}
+
+// (fn [name] args* stmts*)
+func _fn(code List, context *Context) Data {
+	if code.Len() == 4 {
+		// everything's provided (including the function name)
+		return CreateFunction(code, context)
+	} else if code.Len() == 3 {
+		// generate a random function name
+		name := "anonymous-function"
+
+		// insert name as second argument
+		code.InsertAfter(Symbol{name}, code.Front())
+
+		return CreateFunction(code, context)
+	}
+
+	panic("fn expects either 2 or 3 arguments")
+}
+
+// (defn name args* stmts*)
+func _defn(code List, context *Context) Data {
+	name, ok := code.Get(1).(Symbol)
+	if !ok {
+		panic("Second argument must be a symbol")
+	}
+
+	// Create the function by simply changing the defn call to a fn call
+	code.Front().Value = "fn"
+	fn := CreateFunction(code, context)
+
+	// Save the function into the context
+	context.Define(name, fn)
+
+	return fn
 }
 
 // returns a list of items
@@ -202,7 +230,7 @@ func _print(code List, context *Context) Data {
 		}
 	})
 
-	return nil
+	return Nothing{}
 }
 
 // (append list xs1 xs2 ...) - appends lists of items to the list and returns the modified list

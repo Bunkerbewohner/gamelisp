@@ -6,9 +6,7 @@ import "bytes"
 
 type Data interface {
 	String() string
-}
-
-type DataTyper interface {
+	Equals(other Data) bool
 	GetType() DataType
 }
 
@@ -355,6 +353,146 @@ func (x DataType) GetType() DataType {
 	return DataTypeType
 }
 
+func (x Function) GetType() DataType {
+	return FunctionType
+}
+
+//=============================================================================
+// Equality
+//=============================================================================
+
+func (x Int) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Int:
+		return t.Value == x.Value
+	case Float:
+		return int(t.Value) == x.Value
+	}
+
+	return false
+}
+
+func (x Float) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Float:
+		return t.Value == x.Value
+	case Int:
+		return float64(t.Value) == x.Value
+	}
+
+	return false
+}
+
+func (x Bool) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Bool:
+		return t.Value == x.Value
+	}
+
+	return false
+}
+
+func (x String) Equals(other Data) bool {
+	switch t := other.(type) {
+	case String:
+		return t.Value == x.Value
+	}
+
+	return false
+}
+
+// two lists are defined as equal when their contents are equal
+func (x List) Equals(other Data) bool {
+	switch t := other.(type) {
+	case List:
+		if t.Len() != x.Len() {
+			return false
+		}
+
+		a := x.Front()
+		b := t.Front()
+
+		for a != nil && b != nil {
+			dataA := a.Value.(Data)
+			dataB := b.Value.(Data)
+			if !dataA.Equals(dataB) {
+				return false
+			}
+			a = a.Next()
+			b = b.Next()
+		}
+	}
+
+	return false
+}
+
+func (x Nothing) Equals(other Data) bool {
+	switch other.(type) {
+	case Nothing:
+		return true
+	}
+	return false
+}
+
+func (x Symbol) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Symbol:
+		return t.Value == x.Value
+	}
+	return false
+}
+
+func (x Keyword) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Keyword:
+		return t.Value == x.Value
+	}
+	return false
+}
+
+func (x DataType) Equals(other Data) bool {
+	switch t := other.(type) {
+	case DataType:
+		return t.TypeName == x.TypeName
+	}
+	return false
+}
+
+func (x Dict) Equals(other Data) bool {
+	otherDict, ok := other.(Dict)
+	if !ok {
+		return false
+	}
+
+	for key, value := range x.entries {
+		otherValue, ok := otherDict.entries[key]
+		if !ok {
+			return false
+		}
+		if !otherValue.Equals(value) {
+			return false
+		}
+	}
+
+	return true
+}
+
+func (x NativeFunction) Equals(other Data) bool {
+	panic("native functions cannot be compared")
+}
+
+func (x NativeFunctionB) Equals(other Data) bool {
+	panic("native functions cannot be compared")
+}
+
+func (x Function) Equals(other Data) bool {
+	switch t := other.(type) {
+	case Function:
+		return t.String() == x.String()
+	}
+	return false
+}
+
 //=============================================================================
 // Global Variables
 //=============================================================================
@@ -366,6 +504,7 @@ var FloatType = DataType{"Float"}
 var IntType = DataType{"Int"}
 var KeywordType = DataType{"Keyword"}
 var ListType = DataType{"List"}
+var FunctionType = DataType{"Function"}
 var NativeFunctionBType = DataType{"NativeFunctionB"}
 var NativeFunctionType = DataType{"NativeFunction"}
 var NothingType = DataType{"Nothing"}
