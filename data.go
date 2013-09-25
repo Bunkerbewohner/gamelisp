@@ -351,6 +351,10 @@ func (x NativeFunctionB) GetType() DataType {
 	return NativeFunctionBType
 }
 
+func (x DataType) GetType() DataType {
+	return DataTypeType
+}
+
 //=============================================================================
 // Global Variables
 //=============================================================================
@@ -367,3 +371,4 @@ var NativeFunctionType = DataType{"NativeFunction"}
 var NothingType = DataType{"Nothing"}
 var StringType = DataType{"String"}
 var SymbolType = DataType{"Symbol"}
+var DataTypeType = DataType{"DataType"}

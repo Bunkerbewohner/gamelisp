@@ -27,6 +27,20 @@ func (c *Context) LookUp(symbol Symbol) Data {
 	}
 }
 
+func EvaluateString(code string, context *Context) (Data, error) {
+	ast, err := Parse(code)
+	if err != nil {
+		return nil, err
+	}
+
+	result, err := Evaluate(ast, context)
+	if err != nil {
+		return nil, err
+	}
+
+	return result, nil
+}
+
 func Evaluate(code Data, context *Context) (Data, error) {
 	defer func() {
 		if e := recover(); e != nil {
