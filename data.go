@@ -307,43 +307,63 @@ func (ls List) Map(f func(a Data, i int) Data) List {
 	return list
 }
 
+func (x String) GetType() DataType {
+	return StringType
+}
+
 func (x Int) GetType() DataType {
-	datatype := MainContext.LookUp(Symbol{"Int"}).(DataType)
-	return datatype
+	return IntType
 }
 
 func (x Float) GetType() DataType {
-	return MainContext.LookUp(Symbol{"Float"}).(DataType)
+	return FloatType
 }
 
 func (x Bool) GetType() DataType {
-	return MainContext.LookUp(Symbol{"Bool"}).(DataType)
+	return BoolType
 }
 
 func (x Symbol) GetType() DataType {
-	return MainContext.LookUp(Symbol{"Symbol"}).(DataType)
+	return SymbolType
 }
 
 func (x Keyword) GetType() DataType {
-	return MainContext.LookUp(Symbol{"Keyword"}).(DataType)
+	return KeywordType
 }
 
 func (x List) GetType() DataType {
-	return MainContext.LookUp(Symbol{"List"}).(DataType)
+	return ListType
 }
 
 func (x Dict) GetType() DataType {
-	return MainContext.LookUp(Symbol{"Dict"}).(DataType)
+	return DictType
 }
 
 func (x Nothing) GetType() DataType {
-	return DataType{"Nothing"}
+	return NothingType
 }
 
 func (x NativeFunction) GetType() DataType {
-	return MainContext.LookUp(Symbol{"NativeFunction"}).(DataType)
+	return NativeFunctionType
 }
 
 func (x NativeFunctionB) GetType() DataType {
-	return MainContext.LookUp(Symbol{"NativeFunctionB"}).(DataType)
+	return NativeFunctionBType
 }
+
+//=============================================================================
+// Global Variables
+//=============================================================================
+
+// built-in intrinsic types
+var BoolType = DataType{"Bool"}
+var DictType = DataType{"Dict"}
+var FloatType = DataType{"Float"}
+var IntType = DataType{"Int"}
+var KeywordType = DataType{"Keyword"}
+var ListType = DataType{"List"}
+var NativeFunctionBType = DataType{"NativeFunctionB"}
+var NativeFunctionType = DataType{"NativeFunction"}
+var NothingType = DataType{"Nothing"}
+var StringType = DataType{"String"}
+var SymbolType = DataType{"Symbol"}
