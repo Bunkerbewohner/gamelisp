@@ -402,3 +402,29 @@ func _str(code List, context *Context) Data {
 	code.RequireArity(2)
 	return String{code.Second().String()}
 }
+
+func _first(code List, context *Context) Data {
+	code.RequireArity(2)
+	list, ok := code.Get(1).(List)
+	if list.Len() == 0 {
+		panic("Empty list has no first element")
+	}
+	if ok {
+		return list.Front().Value.(Data)
+	} else {
+		panic("argument must be a list")
+	}
+}
+
+func _last(code List, context *Context) Data {
+	code.RequireArity(2)
+	list, ok := code.Get(1).(List)
+	if list.Len() == 0 {
+		panic("Empty list has no last element")
+	}
+	if ok {
+		return list.Back().Value.(Data)
+	} else {
+		panic("argument must be a list")
+	}
+}

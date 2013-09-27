@@ -22,7 +22,7 @@ type NativeFunctionB struct {
 type Function struct {
 	Name        string
 	Dispatchers []DispatchPattern
-	Code        List
+	Code        Data
 }
 
 func (f Function) String() string {
@@ -81,10 +81,18 @@ type ArgumentPattern struct {
 }
 
 func (ap ArgumentPattern) Bind(args List, index int, context *Context) {
-	context.Define(Symbol{ap.Name}, args.Get(index))
+	if ap.Name != "" {
+		context.Define(Symbol{ap.Name}, args.Get(index))
+	} else {
+		// nothing to bind since the expected value is known to the user
+	}
 }
 
 func (ap ArgumentPattern) Match(param Data) bool {
+
+	fmt.Printf("%s ?= %s\n", param.String(),
+		(*ap.ExpectedValue).String())
+
 	// check for a required value
 	if ap.ExpectedValue != nil {
 		return param.Equals(*ap.ExpectedValue)
@@ -175,11 +183,7 @@ func CreateFunction(code List, context *Context) *Function {
 	fn.Dispatchers[0] = *dispatcher
 
 	// Save the code for later execution
-	if list, ok := code.Get(3).(List); ok {
-		fn.Code = list
-	} else {
-		panic("Third argument must be a list")
-	}
+	fn.Code = code.Get(3)
 
 	return fn
 }
@@ -187,12 +191,12 @@ func CreateFunction(code List, context *Context) *Function {
 func CreateParameter(code Data, context *Context) ParameterDeclaration {
 	switch t := code.(type) {
 	case Symbol:
-		return ArgumentPattern{
-			Name: t.Value,
-		}
+		return ArgumentPattern{Name: t.Value}
+	case Int, Float, Bool, String, Keyword, Nothing:
+		return ArgumentPattern{ExpectedValue: &t}
 	}
 
-	return nil
+	panic(fmt.Sprintf("Couldn't create parameter from %s", code.String()))
 }
 
 func (fn Function) selectDispatch(code List) *DispatchPattern {
