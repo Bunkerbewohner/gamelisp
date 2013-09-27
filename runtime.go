@@ -77,6 +77,7 @@ func Evaluate(code Data, context *Context) (Data, error) {
 				// check if we can call it as a function
 				fn, ok := fn.(Caller)
 				if ok {
+					t.Remove(t.Front())
 					return fn.Call(t, context), nil
 				} else {
 					return nil, errors.New(fmt.Sprintf("%s is not a function", t.Get(0)))
@@ -88,6 +89,7 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 		function, ok := t.Front().Value.(Function)
 		if ok {
+			t.Remove(t.Front()) // remove function name from list to get only arguments
 			return function.Call(t, context), nil
 		}
 
