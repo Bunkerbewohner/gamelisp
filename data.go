@@ -125,7 +125,7 @@ func CreateList() List {
 
 func MakeList(args ...Data) List {
 	list := CreateList()
-	for arg := range args {
+	for _, arg := range args {
 		list.PushBack(arg)
 	}
 	return list

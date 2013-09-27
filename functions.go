@@ -4,7 +4,7 @@ import "fmt"
 
 type Caller interface {
 	// Call this function in it's written form, i.e. with a list of expressions, where the first one is the function name
-	Call(code List, context *Context) Data
+	Call(args List, context *Context) Data
 }
 
 type NativeFunction struct {
@@ -42,14 +42,14 @@ type DispatchPattern struct {
 // Attempts to match a list of arguments to this dispatch pattern
 // ignores the first list item, assuming it's the function name
 func (dp DispatchPattern) Match(args List) bool {
-	if len(dp.Parameters) > args.Len()-1 {
+	if len(dp.Parameters) > args.Len() {
 		return false
 	}
 
-	i := 1
-	for e := args.Front(); e != nil && i-1 < len(dp.Parameters); e = e.Next() {
+	i := 0
+	for e := args.Front(); e != nil && i < len(dp.Parameters); e = e.Next() {
 		arg := e.Value.(Data)
-		if !dp.Parameters[i-1].Match(arg) {
+		if !dp.Parameters[i].Match(arg) {
 			return false
 		}
 		i++
@@ -89,10 +89,6 @@ func (ap ArgumentPattern) Bind(args List, index int, context *Context) {
 }
 
 func (ap ArgumentPattern) Match(param Data) bool {
-
-	fmt.Printf("%s ?= %s\n", param.String(),
-		(*ap.ExpectedValue).String())
-
 	// check for a required value
 	if ap.ExpectedValue != nil {
 		return param.Equals(*ap.ExpectedValue)
@@ -129,8 +125,8 @@ func (as ArgumentSink) ParameterName() string {
 	return as.Name
 }
 
-func (fn NativeFunction) Call(code List, context *Context) Data {
-	args := code.Map(__evalArgs(context))
+func (fn NativeFunction) Call(args List, context *Context) Data {
+	args = args.Map(__evalArgs(context))
 	return fn.Function(args, context)
 }
 
@@ -138,70 +134,61 @@ func (fn NativeFunction) String() string {
 	return "native function"
 }
 
-func (fn NativeFunctionB) Call(code List, context *Context) Data {
-	return fn.Function(code, context)
+func (fn NativeFunctionB) Call(args List, context *Context) Data {
+	return fn.Function(args, context)
 }
 
 func (fn NativeFunctionB) String() string {
 	return "native function"
 }
 
-// Expects code for a function definition, e.g.
+// Expects args for a function definition, e.g.
 // (defn myfunction [p1 p2 ...] (stmts*))
-func CreateFunction(code List, context *Context) *Function {
-	// code.Get(0) == "defn"
-
+func CreateFunction(args List, context *Context) *Function {
+	ValidateArgs(args, []string{"Symbol", "List", "Data"})
 	fn := new(Function)
 
 	// function name
-	if name, ok := code.Get(1).(Symbol); ok {
-		fn.Name = name.Value
-	} else {
-		panic("First argument must be a symbol")
-	}
+	fn.Name = args.First().(Symbol).Value
 
 	// create dispatch pattern
-	args, ok := code.Get(2).(List)
-	if !ok {
-		panic("Second argument must be a list")
-	}
-
-	if first, isSymbol := args.Get(0).(Symbol); isSymbol {
+	fnArgs := args.Second().(List)
+	if first, isSymbol := fnArgs.Get(0).(Symbol); isSymbol {
 		if first.Value == "list" {
-			args = args.SliceFrom(1)
+			fnArgs = fnArgs.SliceFrom(1)
 		}
 	}
 
-	count := args.Len()
+	count := fnArgs.Len()
 	dispatcher := new(DispatchPattern)
 	dispatcher.Parameters = make([]ParameterDeclaration, count)
 	for i := 0; i < count; i++ {
-		dispatcher.Parameters[i] = CreateParameter(args.Get(i), context)
+		dispatcher.Parameters[i] = CreateParameter(fnArgs.Get(i), context)
 	}
 
 	fn.Dispatchers = make([]DispatchPattern, 1)
 	fn.Dispatchers[0] = *dispatcher
 
 	// Save the code for later execution
-	fn.Code = code.Get(3)
+	fn.Code = args.Third()
 
 	return fn
 }
 
-func CreateParameter(code Data, context *Context) ParameterDeclaration {
-	switch t := code.(type) {
+func CreateParameter(args Data, context *Context) ParameterDeclaration {
+	switch t := args.(type) {
 	case Symbol:
 		return ArgumentPattern{Name: t.Value}
 	case Int, Float, Bool, String, Keyword, Nothing:
 		return ArgumentPattern{ExpectedValue: &t}
 	}
 
-	panic(fmt.Sprintf("Couldn't create parameter from %s", code.String()))
+	panic(fmt.Sprintf("Couldn't create parameter from %s", args.String()))
 }
 
-func (fn Function) selectDispatch(code List) *DispatchPattern {
+func (fn Function) selectDispatch(args List) *DispatchPattern {
 	for _, dispatch := range fn.Dispatchers {
-		if dispatch.Match(code) {
+		if dispatch.Match(args) {
 			return &dispatch
 		}
 	}
@@ -209,31 +196,29 @@ func (fn Function) selectDispatch(code List) *DispatchPattern {
 	return nil
 }
 
-func (dp DispatchPattern) bindParameters(code List, context *Context) {
+func (dp DispatchPattern) bindParameters(args List, context *Context) {
 	for i, decl := range dp.Parameters {
-		// The n-th argument is the (n+1)-th list item, since the call
-		// contains the function name as the first item
-		decl.Bind(code, i+1, context)
+		decl.Bind(args, i, context)
 	}
 }
 
 // ($name args...)
-func (fn Function) Call(code List, env *Context) Data {
+func (fn Function) Call(args List, env *Context) Data {
 	// evaluate the arguments
-	code = code.Map(__evalArgs(env))
+	args = args.Map(__evalArgs(env))
 
 	// create the function context for this call
 	context := NewContext()
 	context.parent = env
 
 	// choose dispatcher
-	dispatch := fn.selectDispatch(code)
+	dispatch := fn.selectDispatch(args)
 	if dispatch == nil {
 		panic("No dispatch pattern matches the given function arguments")
 	}
-	dispatch.bindParameters(code, context)
+	dispatch.bindParameters(args, context)
 
-	// execute the code in the temporary context
+	// execute the args in the temporary context
 	result, err := Evaluate(fn.Code, context)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to call %s: %s", fn.Name, err))

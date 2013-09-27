@@ -16,11 +16,18 @@ import "reflect"
 
 // Checks argument types against a variable number of allowed signatures
 // Each signature is represented as a list of type names
-func CheckSignature(args List, expected ...[]string) {
+func ValidateArgs(args List, expected ...[]string) {
 	valid := false
 
 	for _, checks := range expected {
 		partvalid := true
+
+		// if there are more checked arguments then provided ones, it cannot be a valid call
+		if len(checks) != args.Len() {
+			continue
+		}
+
+		// compare the required types for each argument
 		for i, t := range checks {
 			argtype := reflect.TypeOf(args.GetElement(i).Value)
 			if argtype.Name() != t && t != "Data" {
@@ -38,15 +45,24 @@ func CheckSignature(args List, expected ...[]string) {
 			if i > 0 {
 				msg += " or "
 			}
-			for _, t := range checks {
-				msg += t + " "
+			msg += "("
+			for j, t := range checks {
+				if j > 0 {
+					msg += " "
+				}
+				msg += t
 			}
+			msg += ")"
 		}
 
-		msg += "\nProvided instead: "
+		msg += "\nFound: ("
 		for e := args.Front(); e != nil; e = e.Next() {
-			msg += reflect.TypeOf(e.Value).Name() + " "
+			if e != args.Front() {
+				msg += " "
+			}
+			msg += reflect.TypeOf(e.Value).Name()
 		}
+		msg += ")"
 
 		panic(msg)
 	}
@@ -71,13 +87,10 @@ func _type(args List, context *Context) Data {
 
 // (def symbol value) - Defines a new symbol and assigns the value
 func _def(args List, context *Context) Data {
-	CheckSignature(args, []string{"Symbol", "Data"})
+	ValidateArgs(args, []string{"Symbol", "Data"})
 
 	// the symbol referring to the defined value
-	symbol, ok := args.First().(Symbol)
-	if !ok {
-		panic("First argument to def must be a symbol")
-	}
+	symbol := args.First().(Symbol)
 
 	// get the value that shall be associated to the symbol
 	value := args.Second()
@@ -95,44 +108,30 @@ func _def(args List, context *Context) Data {
 
 // (fn [name] args* stmts*)
 func _fn(args List, context *Context) Data {
-	if args.Len() == 3 {
-		return CreateFunction(args, context)
-	} else if args.Len() == 2 {
-		// generate a random function name
-		name := "anonymous-function"
+	ValidateArgs(args, []string{"Symbol", "List", "Data"}, []string{"List", "Data"})
 
-		// insert name as first argument
-		args.InsertBefore(Symbol{name}, args.Front())
-
-		return CreateFunction(args, context)
+	if args.Len() < 3 {
+		args.InsertBefore(Symbol{"anonymous"}, args.Front())
 	}
 
-	panic("fn expects either 2 or 3 arguments")
+	return CreateFunction(args, context)
 }
 
 // (defn name args* stmts*)
 func _defn(args List, context *Context) Data {
-	name, ok := args.First().(Symbol)
-	if !ok {
-		panic("First argument must be a symbol")
-	}
+	ValidateArgs(args, []string{"Symbol", "List", "Data"})
 
+	name := args.First().(Symbol)
 	fn := CreateFunction(args, context)
-
-	// Save the function into the context
 	context.Define(name, fn)
 
 	return fn
 }
 
-// returns a list of items
+// (list x1 x2 ...)
 func _list(args List, context *Context) Data {
-	result := args.Filter(func(data Data, i int) bool {
-		return i > 0
-	})
-
-	result.evaluated = true
-	return result
+	args.evaluated = true
+	return args
 }
 
 // creates a dictionary. expects even number of arguments
@@ -140,11 +139,11 @@ func _list(args List, context *Context) Data {
 func _dict(args List, context *Context) Data {
 	dict := CreateDict()
 
-	if (args.Len()-1)%2 == 1 {
+	if args.Len()%2 == 1 {
 		panic("Dictionary requires an even number of arguments")
 	}
 
-	for e := args.Front().Next(); e != nil; e = e.Next() {
+	for e := args.Front(); e != nil; e = e.Next() {
 		key, _ := e.Value.(Data)
 		value, _ := e.Next().Value.(Data)
 		e = e.Next()
@@ -157,60 +156,37 @@ func _dict(args List, context *Context) Data {
 
 // (symbol name) - return a symbol with given name
 func _symbol(args List, context *Context) Data {
-	args.RequireArity(2)
-
-	str, ok := args.Second().(String)
-	if ok {
-		return Symbol{str.Value}
-	}
-
-	panic("symbol expects string as first argument")
+	ValidateArgs(args, []string{"Symbol"})
+	return args.First().(String)
 }
 
 // (keyword name) - return a keyword with given name (prepended with a colon if not supplied)
 func _keyword(args List, context *Context) Data {
-	args.RequireArity(2)
+	ValidateArgs(args, []string{"String"})
 
-	str, ok := args.Second().(String)
-	if ok {
-		if str.Value[0] != ':' {
-			str.Value = ":" + str.Value
-		}
-
-		return Keyword{str.Value}
+	str := args.Second().(String)
+	if str.Value[0] != ':' {
+		str.Value = ":" + str.Value
 	}
 
-	panic("keyword expects string as first argument")
+	return Keyword{str.Value}
 }
 
 // (get dict key)	- gets an entry from a dictionary
 // (get list index)	- gets an entry from a list
 // returns Nothing if entry doesn't exist
 func _get(args List, context *Context) Data {
-	args.RequireArity(3)
+	ValidateArgs(args, []string{"Dict", "Data"}, []string{"List", "Int"})
 
-	list, isList := args.Second().(List)
-	dict, isDict := args.Second().(Dict)
-	if !isList && !isDict {
-		panic("get expects first argument to be a dictionary or list")
-	}
-
-	if isList {
-		index, ok := args.Third().(Int)
-		if !ok {
-			panic("get expects second argument to be an integer if used on lists")
-		}
-
+	if list, ok := args.First().(List); ok {
+		index := args.Second().(Int)
 		return list.Get(int(index.Value))
 	}
 
-	if isDict {
-		key := args.Third()
-		value, ok := dict.entries[key]
-		if !ok {
-			return Nothing{}
+	if dict, ok := args.First().(Dict); ok {
+		if value, defined := dict.entries[args.Second()]; defined {
+			return value
 		}
-		return value
 	}
 
 	return Nothing{}
@@ -218,33 +194,23 @@ func _get(args List, context *Context) Data {
 
 // (put dict key value) - sets the dictionary entry "key" to value
 func _put(args List, context *Context) Data {
-	args.RequireArity(3)
-	dict, isDict := args.Second().(Dict)
-	if !isDict {
-		list, isList := args.Second().(List)
-		if isList {
-			index, isInt := args.Get(2).(Int)
-			if isInt {
-				return list.Set(index.Value, args.Get(3))
-			} else {
-				panic("Put requires index as second argument")
-			}
-		} else {
-			panic("First argument must be a list or dictionary")
-		}
-		panic("First argument must be a list or dictionary")
+	ValidateArgs(args, []string{"Dict", "Data", "Data"}, []string{"List", "Int", "Data"})
+
+	if dict, ok := args.First().(Dict); ok {
+		key := args.Second()
+		value := args.Third()
+		dict.entries[key] = value
+		return value
 	}
 
-	key := args.Get(2)
-	value := args.Get(3)
-
-	dict.entries[key] = value
+	list := args.First().(List)
+	index := args.Second().(Int)
+	value := args.Third()
+	list.Set(index.Value, value)
 	return value
 }
 
 func _print(args List, context *Context) Data {
-	args.RequireArity(2)
-
 	args.Foreach(func(data Data, i int) {
 		switch t := data.(type) {
 		case String:
@@ -259,14 +225,15 @@ func _print(args List, context *Context) Data {
 
 // (append list xs1 xs2 ...) - appends lists of items to the list and returns the modified list
 func _append(args List, context *Context) Data {
-	args.RequireArity(3)
-	list, isList := args.Get(1).(List)
-	if isList {
-		args.SliceFrom(2).Foreach(func(data Data, i int) {
-			if datas, ok := data.(List); ok {
-				list.PushBackList(datas.List)
-			} else {
-				list.PushBack(data)
+	args.RequireArity(2)
+	if list, ok := args.First().(List); ok {
+		args.Foreach(func(data Data, i int) {
+			if i > 0 {
+				if datas, ok := data.(List); ok {
+					list.PushBackList(datas.List)
+				} else {
+					list.PushBack(data)
+				}
 			}
 		})
 		return list
@@ -277,14 +244,15 @@ func _append(args List, context *Context) Data {
 
 // (prepend list xs1 xs2 ...) - prepends lists of items to the list and returns the modified list
 func _prepend(args List, context *Context) Data {
-	args.RequireArity(3)
-	list, isList := args.Get(1).(List)
-	if isList {
-		args.SliceFrom(2).Foreach(func(data Data, i int) {
-			if datas, ok := data.(List); ok {
-				list.PushFrontList(datas.List)
-			} else {
-				list.PushFront(data)
+	args.RequireArity(2)
+	if list, ok := args.Get(1).(List); ok {
+		args.Foreach(func(data Data, i int) {
+			if i > 0 {
+				if datas, ok := data.(List); ok {
+					list.PushFrontList(datas.List)
+				} else {
+					list.PushFront(data)
+				}
 			}
 		})
 		return list
@@ -297,73 +265,73 @@ func _prepend(args List, context *Context) Data {
 // (slice list 0 endExcl) - get all items till end
 // (slice list startIncl) - get all items from startIncl till end
 func _slice(args List, context *Context) Data {
-	args.RequireArity(3)
+	ValidateArgs(args, []string{"List", "Int", "Int"}, []string{"List", "Int"})
 
-	list, isList := args.Second().(List)
-	if !isList {
-		panic("First argument expected to be list")
-	}
+	list := args.First().(List)
 
-	if args.Len() == 4 {
-		start, startInt := args.Get(2).(Int)
-		end, endInt := args.Get(3).(Int)
-		if !startInt || !endInt {
-			panic("Indices must be integers!")
-		}
-
+	if args.Len() == 3 {
+		start := args.Second().(Int)
+		end := args.Third().(Int)
 		return list.Slice(start.Value, end.Value)
-	} else if args.Len() == 3 {
-		start, startInt := args.Get(2).(Int)
-		if !startInt {
-			panic("Index must be integer!")
+	}
+
+	start := args.Second().(Int)
+	return list.Slice(start.Value, list.Len())
+}
+
+// (apply f collection) -
+func _apply(args List, context *Context) Data {
+	ValidateArgs(args, []string{"Function", "List"}, []string{"NativeFunction", "List"})
+	// TODO: Implement apply
+	return Nothing{}
+}
+
+// (foreach collection f)
+func _foreach(args List, context *Context) Data {
+	ValidateArgs(args, []string{"List", "Function"}, []string{"List", "NativeFunction"},
+		[]string{"Dict", "Function"}, []string{"Dict", "NativeFunction"})
+
+	// List
+	if list, ok := args.First().(List); ok {
+		f := args.Second().(Caller)
+		list.Foreach(func(data Data, i int) {
+			fArgs := MakeList(data)
+			f.Call(fArgs, context)
+		})
+	} else {
+		// Dictionary
+		dict := args.First().(Dict)
+		for key, value := range dict.entries {
+			f := args.Second().(Caller)
+			fArgs := MakeList(key, value)
+			f.Call(fArgs, context)
+		}
+	}
+
+	return Nothing{}
+}
+
+// (map f collection)
+func _map(args List, context *Context) Data {
+	ValidateArgs(args, []string{"Function", "List"}, []string{"NativeFunction", "List"},
+		[]string{"Function", "Dict"}, []string{"NativeFunction", "Dict"})
+
+	fn := args.First().(Caller)
+	if list, ok := args.Second().(List); ok {
+		return list.Map(func(data Data, i int) Data {
+			fnArgs := MakeList(data)
+			return fn.Call(fnArgs, context)
+		})
+	} else {
+		dict := args.Second().(Dict)
+		results := CreateList()
+
+		for key, value := range dict.entries {
+			fnArgs := MakeList(key, value)
+			results.PushBack(fn.Call(fnArgs, context))
 		}
 
-		return list.Slice(start.Value, list.Len())
-	}
-
-	panic("Invalid invocation")
-}
-
-func _foreach(args List, context *Context) Data {
-	args.RequireArity(3)
-
-	items, gotItems := args.Second().(List)
-	fn, gotFn := args.Third().(Caller)
-
-	if gotItems && gotFn {
-		items.Foreach(func(data Data, i int) {
-			args := CreateList()
-			args.PushBack(fn)
-			args.PushBack(data)
-
-			fn.Call(args, context)
-		})
-	}
-
-	return nil
-}
-
-func _map(args List, context *Context) Data {
-	args.RequireArity(3)
-
-	fn, gotFn := args.Second().(Caller)
-	items, gotItems := args.Third().(List)
-
-	if gotFn && gotItems {
-		return items.Map(func(data Data, i int) Data {
-			args := CreateList()
-			args.PushBack(fn)
-			args.PushBack(data)
-			return fn.Call(args, context)
-		})
-	}
-
-	if !gotFn {
-		panic("First argument expected to be a function")
-	}
-
-	if !gotItems {
-		panic("Second argument expected to be a list")
+		return results
 	}
 
 	return Nothing{}
@@ -371,31 +339,26 @@ func _map(args List, context *Context) Data {
 
 // (filter f list) - Returns a list of items for which f returns true
 func _filter(args List, context *Context) Data {
-	args.RequireArity(3)
-	fn, gotFn := args.Second().(Caller)
-	items, gotItems := args.Third().(List)
+	ValidateArgs(args, []string{"Function", "List"}, []string{"NativeFunction", "List"},
+		[]string{"Function", "Dict"}, []string{"NativeFunction", "Dict"})
 
-	if gotFn && gotItems {
-		return items.Filter(func(data Data, i int) bool {
-			args := CreateList()
-			args.PushBack(fn)
-			args.PushBack(data)
-			result := fn.Call(args, context)
-			value, isBool := result.(Bool)
-			if isBool {
-				return value.Value
-			}
+	fn := args.First().(Caller)
 
-			panic("Filter function does not return Bool")
+	if list, ok := args.Second().(List); ok {
+		return list.Filter(func(data Data, i int) bool {
+			fnArgs := MakeList(data)
+			return fn.Call(fnArgs, context).(Bool).Value
 		})
-	}
-
-	if !gotFn {
-		panic("First arguments expected to be a function")
-	}
-
-	if !gotItems {
-		panic("Second argument expected to be a list")
+	} else {
+		dict := args.Second().(Dict)
+		results := CreateList()
+		for key, value := range dict.entries {
+			fnArgs := MakeList(key, value)
+			if fn.Call(fnArgs, context).(Bool).Value {
+				results.PushBack(value)
+			}
+		}
+		return results
 	}
 
 	return Nothing{}
@@ -404,51 +367,58 @@ func _filter(args List, context *Context) Data {
 // (len list) - Returns number of items in list
 // (len dict) - Returns number of key-value pairs in dictionary
 func _len(args List, context *Context) Data {
-	args.RequireArity(2)
+	ValidateArgs(args, []string{"Dict"}, []string{"List"}, []string{"String"})
 
-	list, okList := args.Second().(List)
-	dict, okDict := args.Second().(Dict)
-	str, okStr := args.Second().(String)
-
-	if okList {
-		return Int{list.Len()}
-	} else if okDict {
-		return Int{len(dict.entries)}
-	} else if okStr {
-		return Int{len(str.Value)}
+	switch t := args.First().(type) {
+	case List:
+		return Int{t.Len()}
+	case Dict:
+		return Int{len(t.entries)}
+	case String:
+		return Int{len(t.Value)}
 	}
 
-	panic("First arguments must be a list, dictionary or string")
+	return Nothing{}
 }
 
 // (str x) - returns the string representation of x
 func _str(args List, context *Context) Data {
-	args.RequireArity(2)
-	return String{args.Second().String()}
+	args.RequireArity(1)
+	if args.Len() == 1 {
+		return String{args.First().String()}
+	}
+
+	str := ""
+	for e := args.Front(); e != nil; e = e.Next() {
+		switch t := e.Value.(type) {
+		case String:
+			str += t.Value
+		case Data:
+			str += t.String()
+		}
+	}
+
+	return String{str}
 }
 
 func _first(args List, context *Context) Data {
-	args.RequireArity(2)
-	list, ok := args.Get(1).(List)
-	if list.Len() == 0 {
-		panic("Empty list has no first element")
+	ValidateArgs(args, []string{"List"})
+
+	switch t := args.First().(type) {
+	case List:
+		return t.Front().Value.(Data)
 	}
-	if ok {
-		return list.Front().Value.(Data)
-	} else {
-		panic("argument must be a list")
-	}
+
+	return Nothing{}
 }
 
 func _last(args List, context *Context) Data {
-	args.RequireArity(2)
-	list, ok := args.Get(1).(List)
-	if list.Len() == 0 {
-		panic("Empty list has no last element")
+	ValidateArgs(args, []string{"List"})
+
+	switch t := args.First().(type) {
+	case List:
+		return t.Back().Value.(Data)
 	}
-	if ok {
-		return list.Back().Value.(Data)
-	} else {
-		panic("argument must be a list")
-	}
+
+	return Nothing{}
 }
