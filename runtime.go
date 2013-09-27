@@ -34,7 +34,7 @@ func (c *Context) LookUp(symbol Symbol) Data {
 	} else if c.parent != nil {
 		return c.parent.LookUp(symbol)
 	} else {
-		return Nothing{}
+		return nil
 	}
 }
 
@@ -72,8 +72,8 @@ func Evaluate(code Data, context *Context) (Data, error) {
 		symbol, ok := t.Front().Value.(Symbol)
 		if ok {
 			// look up the value for that symbol
-			fn, ok := context.symbols[symbol.Value]
-			if ok {
+			fn := context.LookUp(symbol)
+			if fn != nil {
 				// check if we can call it as a function
 				fn, ok := fn.(Caller)
 				if ok {
@@ -84,17 +84,23 @@ func Evaluate(code Data, context *Context) (Data, error) {
 			} else {
 				return nil, errors.New(fmt.Sprintf("%s is not defined", t.Get(0)))
 			}
-		} else {
-			return nil, errors.New(fmt.Sprintf("%s is not a symbol", t.Get(0)))
 		}
+
+		function, ok := t.Front().Value.(Function)
+		if ok {
+			return function.Call(t, context), nil
+		}
+
+		return nil, errors.New(fmt.Sprintf("%s is neither a symbol nor a function and cannot be called as such", t.Get(0)))
 	case Keyword:
 		return t, nil
 	case Symbol:
 		// look up the symbol and returns its value
-		if value, ok := context.symbols[t.Value]; ok {
-			return value, nil
+		result := context.LookUp(t)
+		if result != nil {
+			return context.LookUp(t), nil
 		} else {
-			return nil, errors.New(fmt.Sprintf("%s is not defined", t))
+			return nil, errors.New(fmt.Sprintf("%s is not defined", t.Value))
 		}
 	}
 

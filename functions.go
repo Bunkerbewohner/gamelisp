@@ -26,7 +26,7 @@ type Function struct {
 }
 
 func (f Function) String() string {
-	return "NativeFunction<" + f.Name + ">"
+	return fmt.Sprintf("Function<%s>", f.Name)
 }
 
 type ParameterDeclaration interface {
@@ -42,15 +42,14 @@ type DispatchPattern struct {
 // Attempts to match a list of arguments to this dispatch pattern
 // ignores the first list item, assuming it's the function name
 func (dp DispatchPattern) Match(args List) bool {
-	if len(dp.Parameters) > args.Len() {
-		panic(fmt.Sprintf("Expected at least %n parameters, found only %n", len(dp.Parameters), args.Len()))
+	if len(dp.Parameters) > args.Len()-1 {
+		return false
 	}
 
 	i := 1
-
-	for e := args.Front().Next(); e != nil && i < len(dp.Parameters); e = e.Next() {
+	for e := args.Front(); e != nil && i-1 < len(dp.Parameters); e = e.Next() {
 		arg := e.Value.(Data)
-		if !dp.Parameters[i].Match(arg) {
+		if !dp.Parameters[i-1].Match(arg) {
 			return false
 		}
 		i++
@@ -86,15 +85,18 @@ func (ap ArgumentPattern) Bind(args List, index int, context *Context) {
 }
 
 func (ap ArgumentPattern) Match(param Data) bool {
+	// check for a required value
 	if ap.ExpectedValue != nil {
 		return param.Equals(*ap.ExpectedValue)
 	}
 
+	// check for a required type
 	if ap.ExpectedType != nil {
 		return param.GetType().Equals(ap.ExpectedType)
 	}
 
-	return false
+	// if no type or value has been specified anything is accepted
+	return true
 }
 
 func (ap ArgumentPattern) ParameterName() string {
@@ -151,19 +153,26 @@ func CreateFunction(code List, context *Context) *Function {
 	}
 
 	// create dispatch pattern
-	if list, ok := code.Get(2).(List); ok {
-		count := list.Len()
-		dispatcher := new(DispatchPattern)
-		dispatcher.Parameters = make([]ParameterDeclaration, count)
-		for i := 0; i < count; i++ {
-			dispatcher.Parameters[i] = CreateParameter(list.Get(i), context)
-		}
-
-		fn.Dispatchers = make([]DispatchPattern, 1)
-		fn.Dispatchers[0] = *dispatcher
-	} else {
+	args, ok := code.Get(2).(List)
+	if !ok {
 		panic("Second argument must be a list")
 	}
+
+	if first, isSymbol := args.Get(0).(Symbol); isSymbol {
+		if first.Value == "list" {
+			args = args.SliceFrom(1)
+		}
+	}
+
+	count := args.Len()
+	dispatcher := new(DispatchPattern)
+	dispatcher.Parameters = make([]ParameterDeclaration, count)
+	for i := 0; i < count; i++ {
+		dispatcher.Parameters[i] = CreateParameter(args.Get(i), context)
+	}
+
+	fn.Dispatchers = make([]DispatchPattern, 1)
+	fn.Dispatchers[0] = *dispatcher
 
 	// Save the code for later execution
 	if list, ok := code.Get(3).(List); ok {
@@ -198,18 +207,26 @@ func (fn Function) selectDispatch(code List) *DispatchPattern {
 
 func (dp DispatchPattern) bindParameters(code List, context *Context) {
 	for i, decl := range dp.Parameters {
-		decl.Bind(code, i, context)
+		// The n-th argument is the (n+1)-th list item, since the call
+		// contains the function name as the first item
+		decl.Bind(code, i+1, context)
 	}
 }
 
 // ($name args...)
 func (fn Function) Call(code List, env *Context) Data {
+	// evaluate the arguments
+	code = code.Map(__evalArgs(env))
+
 	// create the function context for this call
 	context := NewContext()
 	context.parent = env
 
 	// choose dispatcher
 	dispatch := fn.selectDispatch(code)
+	if dispatch == nil {
+		panic("No dispatch pattern matches the given function arguments")
+	}
 	dispatch.bindParameters(code, context)
 
 	// execute the code in the temporary context

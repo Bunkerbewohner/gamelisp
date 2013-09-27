@@ -32,7 +32,10 @@ func main() {
 		// evaluate the expressions
 		if result, err := Evaluate(data, MainContext); err == nil {
 			if result != nil {
-				fmt.Printf(result.String())
+				str := result.String()
+				if str != "Nothing" {
+					fmt.Printf(str)
+				}
 			}
 		} else {
 			fmt.Println(err.Error())

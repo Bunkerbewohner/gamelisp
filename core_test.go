@@ -50,3 +50,22 @@ func TestTypeInstances(t *testing.T) {
 		}
 	}
 }
+
+func TestContext(t *testing.T) {
+	a := NewContext()
+	a.Define(Symbol{"print"}, String{"SOME_VALUE"})
+
+	b := NewContext()
+	b.parent = a
+
+	if !b.IsDefined(Symbol{"print"}) {
+		t.Error("Subcontext must inherit parent's symbols")
+	}
+
+	c := NewContext()
+	c.parent = MainContext
+
+	if !c.IsDefined(Symbol{"type"}) {
+		t.Error("Subcontext doesn't contain MainContext symbols")
+	}
+}
