@@ -96,7 +96,9 @@ func (ap ArgumentPattern) Match(param Data) bool {
 
 	// check for a required type
 	if ap.ExpectedType != nil {
-		return param.GetType().Equals(ap.ExpectedType)
+		paramType := param.GetType()
+		equal := paramType.Equals(*ap.ExpectedType)
+		return equal
 	}
 
 	// if no type or value has been specified anything is accepted
@@ -178,6 +180,14 @@ func CreateFunction(args List, context *Context) *Function {
 func CreateParameter(args Data, context *Context) ParameterDeclaration {
 	switch t := args.(type) {
 	case Symbol:
+		// check if the symbol refers to a datatype
+		def := context.LookUp(t)
+		if def != nil {
+			if datatype, ok := def.(DataType); ok {
+				return ArgumentPattern{ExpectedType: &datatype}
+			}
+		}
+
 		return ArgumentPattern{Name: t.Value}
 	case Int, Float, Bool, String, Keyword, Nothing:
 		return ArgumentPattern{ExpectedValue: &t}
