@@ -123,9 +123,43 @@ func _defn(args List, context *Context) Data {
 
 	name := args.First().(Symbol)
 	fn := CreateFunction(args, context)
-	context.Define(name, fn)
+
+	def := context.LookUp(name)
+	if def == nil {
+		// define new function
+		context.Define(name, fn)
+	} else {
+		// prevent native functions from being overwritten
+		if _, ok := def.(NativeFunction); ok {
+			panic(fmt.Sprintf("%s (%s) cannot be overwritten", def.String(), def.GetType().String()))
+		}
+
+		// just overwrite anything else
+		context.Define(name, fn)
+	}
 
 	return fn
+}
+
+// (fn+= name args* stmts*)
+func _extend_function(args List, context *Context) Data {
+	ValidateArgs(args, []string{"Symbol", "List", "Data"})
+	name := args.First().(Symbol)
+	fn := CreateFunction(args, context)
+	def := context.LookUp(name)
+	if def == nil {
+		context.Define(name, fn)
+		return Nothing{}
+	}
+	if basisFn, ok := def.(*Function); ok {
+		for _, dispatch := range fn.Dispatchers {
+			basisFn.AddDispatch(&dispatch)
+		}
+	} else {
+		panic(fmt.Sprintf("%s is not a function", def.String()))
+	}
+
+	return Nothing{}
 }
 
 // (list x1 x2 ...)

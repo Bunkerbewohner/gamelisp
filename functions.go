@@ -22,21 +22,55 @@ type NativeFunctionB struct {
 type Function struct {
 	Name        string
 	Dispatchers []DispatchPattern
-	Code        Data
 }
 
 func (f Function) String() string {
 	return fmt.Sprintf("Function<%s>", f.Name)
 }
 
+func (f *Function) AddDispatch(dp *DispatchPattern) {
+	index := -1
+
+	// check if the pattern already exists
+	for i, dispatcher := range f.Dispatchers {
+		if dispatcher.Equals(*dp) {
+			index = i
+			break
+		}
+	}
+
+	if index >= 0 {
+		f.Dispatchers[index] = *dp
+	} else {
+		f.Dispatchers = append(f.Dispatchers, *dp)
+	}
+}
+
 type ParameterDeclaration interface {
 	ParameterName() string
 	Match(arg Data) bool
 	Bind(args List, index int, context *Context)
+	Equals(other ParameterDeclaration) bool
 }
 
 type DispatchPattern struct {
 	Parameters []ParameterDeclaration
+	Code       Data
+}
+
+// Two dispatch patterns are equal if their patterns are equivalent (Code is not considered)
+func (dp DispatchPattern) Equals(other DispatchPattern) bool {
+	if len(dp.Parameters) != len(other.Parameters) {
+		return false
+	}
+
+	for i, param := range dp.Parameters {
+		if !param.Equals(other.Parameters[i]) {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Attempts to match a list of arguments to this dispatch pattern
@@ -77,7 +111,17 @@ type ArgumentPattern struct {
 	ExpectedType *DataType
 
 	// The expected value or nil if any value is accepted
-	ExpectedValue *Data
+	ExpectedValue Data
+}
+
+func (ap ArgumentPattern) Equals(other ParameterDeclaration) bool {
+	if otherAp, ok := other.(ArgumentPattern); ok {
+		types := (ap.ExpectedType == nil && otherAp.ExpectedType == nil) || ap.ExpectedType.Equals(otherAp.ExpectedType)
+		values := (ap.ExpectedValue == nil && otherAp.ExpectedValue == nil) || ap.ExpectedValue.Equals(otherAp.ExpectedValue)
+		return types && values
+	}
+
+	return false
 }
 
 func (ap ArgumentPattern) Bind(args List, index int, context *Context) {
@@ -91,7 +135,7 @@ func (ap ArgumentPattern) Bind(args List, index int, context *Context) {
 func (ap ArgumentPattern) Match(param Data) bool {
 	// check for a required value
 	if ap.ExpectedValue != nil {
-		return param.Equals(*ap.ExpectedValue)
+		return param.Equals(ap.ExpectedValue)
 	}
 
 	// check for a required type
@@ -112,6 +156,14 @@ func (ap ArgumentPattern) ParameterName() string {
 // placeholder for a argument sink that consumes all following arguments passed to the function
 type ArgumentSink struct {
 	Name string
+}
+
+func (as ArgumentSink) Equals(pd ParameterDeclaration) bool {
+	if _, ok := pd.(ArgumentSink); ok {
+		return true
+	}
+
+	return false
 }
 
 func (as ArgumentSink) Bind(args List, index int, context *Context) {
@@ -167,12 +219,10 @@ func CreateFunction(args List, context *Context) *Function {
 	for i := 0; i < count; i++ {
 		dispatcher.Parameters[i] = CreateParameter(fnArgs.Get(i), context)
 	}
+	dispatcher.Code = args.Third()
 
 	fn.Dispatchers = make([]DispatchPattern, 1)
 	fn.Dispatchers[0] = *dispatcher
-
-	// Save the code for later execution
-	fn.Code = args.Third()
 
 	return fn
 }
@@ -190,7 +240,7 @@ func CreateParameter(args Data, context *Context) ParameterDeclaration {
 
 		return ArgumentPattern{Name: t.Value}
 	case Int, Float, Bool, String, Keyword, Nothing:
-		return ArgumentPattern{ExpectedValue: &t}
+		return ArgumentPattern{ExpectedValue: t}
 	}
 
 	panic(fmt.Sprintf("Couldn't create parameter from %s", args.String()))
@@ -229,7 +279,7 @@ func (fn Function) Call(args List, env *Context) Data {
 	dispatch.bindParameters(args, context)
 
 	// execute the args in the temporary context
-	result, err := Evaluate(fn.Code, context)
+	result, err := Evaluate(dispatch.Code, context)
 	if err != nil {
 		panic(fmt.Sprintf("Failed to call %s: %s", fn.Name, err))
 	}

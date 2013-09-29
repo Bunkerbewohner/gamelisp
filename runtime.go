@@ -127,11 +127,11 @@ func CreateMainContext() *Context {
 	context.symbols["false"] = Bool{false}
 
 	context.symbols["def"] = NativeFunctionB{_def}
-	context.symbols["def!"] = NativeFunctionB{_def}
 	context.symbols["type"] = NativeFunction{_type}
 	context.symbols["str"] = NativeFunction{_str}
 	context.symbols["fn"] = NativeFunctionB{_fn}
 	context.symbols["defn"] = NativeFunctionB{_defn}
+	context.symbols["defn.."] = NativeFunctionB{_extend_function}
 
 	context.symbols["symbol"] = NativeFunction{_symbol}
 	context.symbols["keyword"] = NativeFunction{_keyword}
