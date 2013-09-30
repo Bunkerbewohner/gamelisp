@@ -535,3 +535,4 @@ var NothingType = DataType{"Nothing"}
 var StringType = DataType{"String"}
 var SymbolType = DataType{"Symbol"}
 var DataTypeType = DataType{"DataType"}
+var ContextType = DataType{"Context"}

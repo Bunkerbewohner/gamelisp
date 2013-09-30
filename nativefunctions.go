@@ -468,8 +468,21 @@ func _last(args List, context *Context) Data {
 func _import(args List, context *Context) Data {
 	ValidateArgs(args, []string{"Symbol"}, []string{"Symbol", "Keyword", "Symbol"})
 
-	//
-	return nil
+	// get the module
+	name := args.First().(Symbol)
+	env := context.LookUp(Symbol{"$core"}).(*Context)
+	module := GetModule(name.Value, env)
+
+	// prefix (by default module name)
+	prefix := module.name
+	if args.Len() > 2 && args.Second().Equals(Keyword{":as"}) {
+		prefix = args.Third().(Symbol).Value
+	}
+
+	// import it into the current context
+	context.Import(module.context, prefix+".")
+
+	return Nothing{}
 }
 
 // (do (expr1) (expr2) ...)

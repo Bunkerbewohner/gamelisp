@@ -1,4 +1,0 @@
-; gamelisp.core contains the basic functions that were not implemented in Go, but in gamelisp itself
-(module core)
-
-(def version "0.1")

@@ -5,9 +5,10 @@ import "fmt"
 import "io/ioutil"
 import "strings"
 import "os"
+import "path/filepath"
 
 var modules map[string]*Module = make(map[string]*Module)
-var moduleSearchPaths = []string{"."}
+var moduleSearchPaths = []string{"modules"}
 
 type Context struct {
 	symbols map[string]Data
@@ -20,11 +21,23 @@ type Module struct {
 	context *Context
 }
 
+func (c *Context) String() string {
+	return "Context"
+}
+
+func (c *Context) Equals(other Data) bool {
+	return false
+}
+
+func (c *Context) GetType() DataType {
+	return ContextType
+}
+
 // Gets a module by name. Loads the module beforehand if necessary
-func GetModule(name string) *Module {
+func GetModule(name string, env *Context) *Module {
 	module, ok := modules[name]
 	if !ok {
-		module = LoadModule(name)
+		module = LoadModule(name, env)
 		modules[name] = module
 	}
 
@@ -32,17 +45,21 @@ func GetModule(name string) *Module {
 }
 
 func FindModuleFile(name string) string {
-	for _, path := range moduleSearchPaths {
-		filepath := path + "/" + name
-		if _, err := os.Stat(filepath); err == nil {
-			return filepath
+	for _, modulePath := range moduleSearchPaths {
+		path := modulePath + "/" + strings.Replace(name, ".", "/", -1) + ".glisp"
+		absPath, err := filepath.Abs(path)
+		if err != nil {
+			panic(err.Error())
+		}
+		if _, err := os.Stat(absPath); err == nil {
+			return absPath
 		}
 	}
 
 	return ""
 }
 
-func LoadModule(name string) *Module {
+func LoadModule(name string, env *Context) *Module {
 	path := FindModuleFile(name)
 	if path == "" {
 		panic(fmt.Sprintf("Module %s could not be found in search path", name))
@@ -52,14 +69,16 @@ func LoadModule(name string) *Module {
 		panic(fmt.Sprintf("Failed to load module %s: %s", name, err.Error()))
 	}
 
-	text := "(do " + string(bytes) + ")"
+	text := "(do " + string(bytes) + ""
 	context := NewContext()
+	context.parent = env
+
 	_, err = EvaluateString(text, context)
 	if err == nil {
 		module := new(Module)
-		module.name = strings.TrimSuffix(strings.ToLower(name), ".gl")
+		module.name = name
 		module.context = context
-		module.source = name
+		module.source = path
 
 		return module
 	} else {
@@ -94,6 +113,12 @@ func (c *Context) LookUp(symbol Symbol) Data {
 		return c.parent.LookUp(symbol)
 	} else {
 		return nil
+	}
+}
+
+func (c *Context) Import(other *Context, prefix string) {
+	for key, value := range other.symbols {
+		c.symbols[prefix+key] = value
 	}
 }
 
@@ -185,6 +210,7 @@ func CreateMainContext() *Context {
 	context.symbols["true"] = Bool{true}
 	context.symbols["false"] = Bool{false}
 
+	context.symbols["do"] = NativeFunction{_do}
 	context.symbols["def"] = NativeFunctionB{_def}
 	context.symbols["type"] = NativeFunction{_type}
 	context.symbols["str"] = NativeFunction{_str}
@@ -218,6 +244,13 @@ func CreateMainContext() *Context {
 	context.symbols["-"] = NativeFunction{_minus}
 	context.symbols["*"] = NativeFunction{_multiply}
 	context.symbols["/"] = NativeFunction{_divide}
+
+	context.symbols["import"] = NativeFunctionB{_import}
+	context.symbols["$core"] = context
+
+	// import aux. functions defined in gamelisp itself
+	coreModule := GetModule("$core", context)
+	context.Import(coreModule.context, "")
 
 	return context
 }

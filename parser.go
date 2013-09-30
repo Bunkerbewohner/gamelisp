@@ -10,7 +10,7 @@ var whitespaceRegex = regexp.MustCompile("^\\s+")
 var stringRegex = regexp.MustCompile("^\"(?:\\.|[^\\\"]|\"\")*\"")
 var intRegex = regexp.MustCompile("^-?[\\d,]+")
 var floatRegex = regexp.MustCompile("^-?[\\d,]+[.]\\d*")
-var symbolRegex = regexp.MustCompile("^[^\\.0-9\\s(\\[{}\\])][^\\.\\s(\\[{}\\])]*")
+var symbolRegex = regexp.MustCompile("^[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 var keywordRegex = regexp.MustCompile("^:[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 
 // A parser function receives an input string and a read offset
@@ -21,11 +21,12 @@ type ParserFunc func(input string, offset int) (Data, int)
 func Parse(input string) (Data, error) {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Printf("Parser Error: %v", e)
+			fmt.Printf("Parser Error: %v\n", e)
 		}
 	}()
 
-	data, _ := ParseAny(input, 0)
+	code := strings.TrimSpace(input)
+	data, _ := ParseAny(code, 0)
 
 	if data == nil {
 		return nil, errors.New("Failed to parse string")
@@ -94,7 +95,8 @@ func ParseSymbol(input string, offset int) (Data, int) {
 	length := len(str)
 
 	if length == 0 {
-		panic(fmt.Sprintf("Failed to parse symbol in input \"%s\"", input[offset:]))
+		panic(fmt.Sprintf("Failed to parse symbol in input \"%s\" (char=%d)",
+			input[offset:], input[offset]))
 	}
 
 	return Symbol{str}, offset + length
@@ -135,7 +137,8 @@ func ParseNumber(input string, offset int) (Data, int) {
 // Parses any data value
 func ParseAny(input string, offset int) (Data, int) {
 	// ignore whitespace
-	for input[offset] == ' ' || input[offset] == '\t' || input[offset] == '\r' || input[offset] == 'n' {
+	for input[offset] == ' ' || input[offset] == '\t' ||
+		input[offset] == '\r' || input[offset] == '\n' {
 		offset++
 	}
 

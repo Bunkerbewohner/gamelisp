@@ -1,0 +1,4 @@
+(def version "0.1")
+
+(defn.. fib [0] 1)
+(defn.. fib [n] (* n 2))
