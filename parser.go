@@ -10,7 +10,7 @@ var whitespaceRegex = regexp.MustCompile("^\\s+")
 var stringRegex = regexp.MustCompile("^\"(?:\\.|[^\\\"]|\"\")*\"")
 var intRegex = regexp.MustCompile("^-?[\\d,]+")
 var floatRegex = regexp.MustCompile("^-?[\\d,]+[.]\\d*")
-var symbolRegex = regexp.MustCompile("^[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
+var symbolRegex = regexp.MustCompile("^[^\\.0-9\\s(\\[{}\\])][^\\.\\s(\\[{}\\])]*")
 var keywordRegex = regexp.MustCompile("^:[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 
 // A parser function receives an input string and a read offset

@@ -139,44 +139,64 @@ func (f Float) Divide(a Data) Data {
 // Native functions
 //=============================================================================
 
-func _plus(code List, context *Context) Data {
-	code.RequireArity(3)
+func _plus(args List, context *Context) Data {
+	args.RequireArity(2)
 
-	if adder, ok := code.Second().(Adder); ok {
-		return adder.Plus(code.Third())
+	sum, ok := args.First().(Adder)
+	if !ok {
+		panic("Operand not supported")
 	}
 
-	panic("Operand not supported")
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		sum = sum.Plus(e.Value.(Data)).(Adder)
+	}
+
+	return sum.(Data)
 }
 
-func _minus(code List, context *Context) Data {
-	code.RequireArity(3)
+func _minus(args List, context *Context) Data {
+	args.RequireArity(2)
 
-	if subber, ok := code.Second().(Subtracter); ok {
-		return subber.Minus(code.Third())
+	sum, ok := args.First().(Subtracter)
+	if !ok {
+		panic("Operand not supported")
 	}
 
-	panic("Operand not supported")
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		sum = sum.Minus(e.Value.(Data)).(Subtracter)
+	}
+
+	return sum.(Data)
 }
 
-func _multiply(code List, context *Context) Data {
-	code.RequireArity(3)
+func _multiply(args List, context *Context) Data {
+	args.RequireArity(2)
 
-	if m, ok := code.Second().(Multiplyer); ok {
-		return m.Multiply(code.Third())
+	sum, ok := args.First().(Multiplyer)
+	if !ok {
+		panic("Operand not supported")
 	}
 
-	panic("Operand not supported")
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		sum = sum.Multiply(e.Value.(Data)).(Multiplyer)
+	}
+
+	return sum.(Data)
 }
 
-func _divide(code List, context *Context) Data {
-	code.RequireArity(3)
+func _divide(args List, context *Context) Data {
+	args.RequireArity(2)
 
-	if divider, ok := code.Second().(Divider); ok {
-		return divider.Divide(code.Third())
+	sum, ok := args.First().(Divider)
+	if !ok {
+		panic("Operand not supported")
 	}
 
-	panic("Operand not supported")
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		sum = sum.Divide(e.Value.(Data)).(Divider)
+	}
+
+	return sum.(Data)
 }
 
 //=============================================================================

@@ -190,8 +190,8 @@ func _dict(args List, context *Context) Data {
 
 // (symbol name) - return a symbol with given name
 func _symbol(args List, context *Context) Data {
-	ValidateArgs(args, []string{"Symbol"})
-	return args.First().(String)
+	ValidateArgs(args, []string{"String"})
+	return Symbol{args.First().(String).Value}
 }
 
 // (keyword name) - return a keyword with given name (prepended with a colon if not supplied)
@@ -244,6 +244,7 @@ func _put(args List, context *Context) Data {
 	return value
 }
 
+// (print x1 x2 ...)
 func _print(args List, context *Context) Data {
 	args.Foreach(func(data Data, i int) {
 		switch t := data.(type) {
@@ -316,7 +317,13 @@ func _slice(args List, context *Context) Data {
 // (apply f collection) -
 func _apply(args List, context *Context) Data {
 	ValidateArgs(args, []string{"Function", "List"}, []string{"NativeFunction", "List"})
-	// TODO: Implement apply
+
+	if fn, ok := args.First().(Caller); ok {
+		if list, ok := args.Second().(List); ok {
+			return fn.Call(list, context)
+		}
+	}
+
 	return Nothing{}
 }
 
@@ -455,4 +462,29 @@ func _last(args List, context *Context) Data {
 	}
 
 	return Nothing{}
+}
+
+// (import packagename [:as alias])
+func _import(args List, context *Context) Data {
+	ValidateArgs(args, []string{"Symbol"}, []string{"Symbol", "Keyword", "Symbol"})
+
+	//
+	return nil
+}
+
+// (do (expr1) (expr2) ...)
+// executes all the expressions passed in as arguments
+// returns the value of the last expression
+func _do(args List, context *Context) Data {
+	var endresult Data = nil
+	for e := args.Front(); e != nil; e = e.Next() {
+		result, err := Evaluate(e.Value.(Data), context)
+		if e.Next() == nil && err == nil {
+			endresult = result
+		} else if err != nil {
+			panic(err.Error())
+		}
+	}
+
+	return endresult
 }

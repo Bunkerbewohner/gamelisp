@@ -2,10 +2,69 @@ package main
 
 import "errors"
 import "fmt"
+import "io/ioutil"
+import "strings"
+import "os"
+
+var modules map[string]*Module = make(map[string]*Module)
+var moduleSearchPaths = []string{"."}
 
 type Context struct {
 	symbols map[string]Data
 	parent  *Context
+}
+
+type Module struct {
+	name    string
+	source  string
+	context *Context
+}
+
+// Gets a module by name. Loads the module beforehand if necessary
+func GetModule(name string) *Module {
+	module, ok := modules[name]
+	if !ok {
+		module = LoadModule(name)
+		modules[name] = module
+	}
+
+	return module
+}
+
+func FindModuleFile(name string) string {
+	for _, path := range moduleSearchPaths {
+		filepath := path + "/" + name
+		if _, err := os.Stat(filepath); err == nil {
+			return filepath
+		}
+	}
+
+	return ""
+}
+
+func LoadModule(name string) *Module {
+	path := FindModuleFile(name)
+	if path == "" {
+		panic(fmt.Sprintf("Module %s could not be found in search path", name))
+	}
+	bytes, err := ioutil.ReadFile(path)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to load module %s: %s", name, err.Error()))
+	}
+
+	text := "(do " + string(bytes) + ")"
+	context := NewContext()
+	_, err = EvaluateString(text, context)
+	if err == nil {
+		module := new(Module)
+		module.name = strings.TrimSuffix(strings.ToLower(name), ".gl")
+		module.context = context
+		module.source = name
+
+		return module
+	} else {
+		panic(err.Error())
+	}
 }
 
 func NewContext() *Context {
@@ -140,9 +199,11 @@ func CreateMainContext() *Context {
 
 	context.symbols["print"] = NativeFunction{_print}
 
+	context.symbols["do"] = NativeFunction{_do}
 	context.symbols["foreach"] = NativeFunction{_foreach}
 	context.symbols["map"] = NativeFunction{_map}
 	context.symbols["filter"] = NativeFunction{_filter}
+	context.symbols["apply"] = NativeFunction{_apply}
 
 	context.symbols["get"] = NativeFunction{_get}
 	context.symbols["put"] = NativeFunction{_put}
