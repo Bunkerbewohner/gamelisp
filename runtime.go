@@ -145,7 +145,7 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 	switch t := code.(type) {
 	case List:
-		// copy the list
+		// copy the list because we're going to mutate it
 		t = t.SliceFrom(0)
 
 		if t.evaluated {

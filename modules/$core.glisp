@@ -1,2 +1,3 @@
-(def version "0.1")
+(def GAMELISP_VERION "0.1")
 
+(defn snd [x] (get x 1))
