@@ -145,6 +145,9 @@ func Evaluate(code Data, context *Context) (Data, error) {
 
 	switch t := code.(type) {
 	case List:
+		// copy the list
+		t = t.SliceFrom(0)
+
 		if t.evaluated {
 			// if the list was already evaluated just return its contents as is
 			return code, nil
@@ -231,6 +234,10 @@ func CreateMainContext() *Context {
 	context.symbols["filter"] = NativeFunction{_filter}
 	context.symbols["apply"] = NativeFunction{_apply}
 
+	// control flow
+	context.symbols["if"] = NativeFunctionB{_if}
+	context.symbols["="] = NativeFunction{_equals}
+
 	context.symbols["get"] = NativeFunction{_get}
 	context.symbols["put"] = NativeFunction{_put}
 	context.symbols["slice"] = NativeFunction{_slice}
@@ -247,6 +254,7 @@ func CreateMainContext() *Context {
 
 	context.symbols["import"] = NativeFunctionB{_import}
 	context.symbols["$core"] = context
+	context.symbols["code"] = NativeFunction{_code}
 
 	// import aux. functions defined in gamelisp itself
 	coreModule := GetModule("$core", context)

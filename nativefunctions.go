@@ -501,3 +501,62 @@ func _do(args List, context *Context) Data {
 
 	return endresult
 }
+
+// (if cond ifTrue [ifFalse])
+func _if(args List, context *Context) Data {
+	ValidateArgs(args, []string{"Data", "Data"}, []string{"Data", "Data", "Data"})
+
+	value, err := Evaluate(args.First(), context)
+	if err != nil {
+		panic("Evaluation failed")
+	}
+	boolean := value.(Bool)
+
+	if boolean.Value {
+		result, err := Evaluate(args.Second(), context)
+		if err == nil {
+			return result
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	if args.Len() > 2 {
+		result, err := Evaluate(args.Third(), context)
+		if err == nil {
+			return result
+		} else {
+			panic(err.Error())
+		}
+	}
+
+	return Nothing{}
+}
+
+// (= a b)
+func _equals(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	ref := args.First()
+
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		if !ref.Equals(e.Value.(Data)) {
+			return Bool{false}
+		}
+	}
+
+	return Bool{true}
+}
+
+func _code(args List, context *Context) Data {
+	//ValidateArgs(args, []string{"*Function"})
+	str := "{\n"
+
+	for _, dispatch := range args.First().(*Function).Dispatchers {
+		str += "\t" + dispatch.String() + "\n"
+	}
+
+	str += "}"
+
+	return String{str}
+}

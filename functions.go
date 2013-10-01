@@ -51,11 +51,25 @@ type ParameterDeclaration interface {
 	Match(arg Data) bool
 	Bind(args List, index int, context *Context)
 	Equals(other ParameterDeclaration) bool
+	String() string
 }
 
 type DispatchPattern struct {
 	Parameters []ParameterDeclaration
 	Code       Data
+}
+
+func (dp *DispatchPattern) String() string {
+	str := "("
+	for i, param := range dp.Parameters {
+		if i > 0 {
+			str += " "
+		}
+		str += param.String()
+	}
+	str += ")"
+
+	return str + " " + dp.Code.String()
 }
 
 // Two dispatch patterns are equal if their patterns are equivalent (Code is not considered)
@@ -114,6 +128,22 @@ type ArgumentPattern struct {
 	ExpectedValue Data
 }
 
+func (ap ArgumentPattern) String() string {
+	if ap.Name != "" {
+		if ap.ExpectedType != nil {
+			return "(" + ap.Name + " " + ap.ExpectedType.String() + ")"
+		} else {
+			return ap.Name
+		}
+	}
+
+	if ap.ExpectedType != nil {
+		return ap.ExpectedType.String()
+	}
+
+	return ap.ExpectedValue.String()
+}
+
 func (ap ArgumentPattern) Equals(other ParameterDeclaration) bool {
 	if otherAp, ok := other.(ArgumentPattern); ok {
 		types := (ap.ExpectedType == nil && otherAp.ExpectedType == nil) || ap.ExpectedType.Equals(otherAp.ExpectedType)
@@ -156,6 +186,10 @@ func (ap ArgumentPattern) ParameterName() string {
 // placeholder for a argument sink that consumes all following arguments passed to the function
 type ArgumentSink struct {
 	Name string
+}
+
+func (as ArgumentSink) String() string {
+	return as.Name
 }
 
 func (as ArgumentSink) Equals(pd ParameterDeclaration) bool {
