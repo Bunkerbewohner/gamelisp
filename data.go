@@ -390,7 +390,7 @@ func (x Int) Equals(other Data) bool {
 	case Int:
 		return t.Value == x.Value
 	case Float:
-		return int(t.Value) == x.Value
+		return t.Value == float64(x.Value)
 	}
 
 	return false

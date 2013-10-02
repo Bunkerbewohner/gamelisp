@@ -252,6 +252,13 @@ func CreateMainContext() *Context {
 	context.symbols["*"] = NativeFunction{_multiply}
 	context.symbols["/"] = NativeFunction{_divide}
 
+	context.symbols["compare"] = NativeFunction{_compare}
+	context.symbols["<"] = NativeFunction{_lesser_than}
+	context.symbols[">"] = NativeFunction{_greater_than}
+	context.symbols["<="] = NativeFunction{_lesser_than_or_equal}
+	context.symbols[">="] = NativeFunction{_greater_than_or_equal}
+	context.symbols["=="] = NativeFunction{_equals}
+
 	context.symbols["import"] = NativeFunctionB{_import}
 	context.symbols["$core"] = context
 	context.symbols["code"] = NativeFunction{_code}

@@ -2,6 +2,8 @@ package main
 
 import "strconv"
 import "strings"
+import "math"
+import "fmt"
 
 type Int struct {
 	Value int
@@ -25,6 +27,17 @@ type Multiplyer interface {
 
 type Divider interface {
 	Divide(a Data) Data
+}
+
+type Comparer interface {
+	// comparing two items with one another. Returns the result
+	// of the comparison and a bool indicating whether the items
+	// are comparable at all.
+	//  * !comparible => comparison = 0
+	//  * this < a => comparison < 0
+	//	* this > a => comparison > 0
+	//  * this == a => comparison = 0
+	Compare(a Data) (comparison int, comparible bool)
 }
 
 func (i Int) Plus(a Data) Data {
@@ -197,6 +210,144 @@ func _divide(args List, context *Context) Data {
 	}
 
 	return sum.(Data)
+}
+
+func _compare(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	a, ok := args.First().(Comparer)
+	if !ok {
+		panic("Left operand is not comparable")
+	}
+
+	comp, ok := a.Compare(args.Second())
+	if !ok {
+		panic(fmt.Sprintf("Right operand cannot be compared to %s", args.First().GetType().String()))
+	}
+
+	return Int{comp}
+}
+
+func _lesser_than(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	operand, ok := args.First().(Comparer)
+	if !ok {
+		panic("Left operand is not comparable")
+	}
+
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		comparison, comparable := operand.Compare(e.Value.(Data))
+		if !comparable || comparison >= 0 {
+			return Bool{false}
+		}
+		operand = e.Value.(Comparer)
+	}
+
+	return Bool{true}
+}
+
+func _greater_than(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	operand, ok := args.First().(Comparer)
+	if !ok {
+		panic("Left operand is not comparable")
+	}
+
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		comparison, comparable := operand.Compare(e.Value.(Data))
+		if !comparable || comparison <= 0 {
+			return Bool{false}
+		}
+		operand = e.Value.(Comparer)
+	}
+
+	return Bool{true}
+}
+
+func _lesser_than_or_equal(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	operand, ok := args.First().(Comparer)
+	if !ok {
+		panic("Left operand is not comparable")
+	}
+
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		comparison, comparable := operand.Compare(e.Value.(Data))
+		if !comparable || comparison > 0 {
+			return Bool{false}
+		}
+		operand = e.Value.(Comparer)
+	}
+
+	return Bool{true}
+}
+
+func _greater_than_or_equal(args List, context *Context) Data {
+	args.RequireArity(2)
+
+	operand, ok := args.First().(Comparer)
+	if !ok {
+		panic("Left operand is not comparable")
+	}
+
+	for e := args.Front().Next(); e != nil; e = e.Next() {
+		comparison, comparable := operand.Compare(e.Value.(Data))
+		if !comparable || comparison < 0 {
+			return Bool{false}
+		}
+		operand = e.Value.(Comparer)
+	}
+
+	return Bool{true}
+}
+
+//=============================================================================
+// Comparison
+//=============================================================================
+
+func (i Int) Compare(a Data) (int, bool) {
+	switch t := a.(type) {
+	case Int:
+		return i.Value - t.Value, true
+	case Float:
+		diff := float64(i.Value) - t.Value
+		if diff < 0 {
+			return int(math.Min(diff, -1)), true
+		} else if diff > 0 {
+			return int(math.Max(diff, 1)), true
+		} else {
+			return 0, true
+		}
+	}
+
+	return 0, false
+}
+
+func (f Float) Compare(a Data) (int, bool) {
+	switch t := a.(type) {
+	case Int:
+		diff := f.Value - float64(t.Value)
+		if diff < 0 {
+			return int(math.Min(diff, -1)), true
+		} else if diff > 0 {
+			return int(math.Max(diff, 1)), true
+		} else {
+			return 0, true
+		}
+	case Float:
+		diff := f.Value - t.Value
+		if diff < 0 {
+			return int(math.Min(diff, -1)), true
+		} else if diff > 0 {
+			return int(math.Max(diff, 1)), true
+		} else {
+			return 0, true
+		}
+	}
+	return 0, false
 }
 
 //=============================================================================
