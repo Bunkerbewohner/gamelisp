@@ -273,6 +273,24 @@ func CreateParameter(args Data, context *Context) ParameterDeclaration {
 		}
 
 		return ArgumentPattern{Name: t.Value}
+	case List:
+		// (name Type)
+		symbol, ok := t.First().(Symbol)
+		if !ok {
+			panic("First part of annotated parameter must be a symbol")
+		}
+
+		temp, err := Evaluate(t.Second(), context)
+		if err != nil {
+			panic(err.Error())
+		}
+		typ, ok := temp.(DataType)
+		if !ok {
+			panic("Second part of annotated parameter must be a DataType")
+		}
+
+		return ArgumentPattern{Name: symbol.Value, ExpectedType: &typ}
+
 	case Int, Float, Bool, String, Keyword, Nothing:
 		return ArgumentPattern{ExpectedValue: t}
 	}
