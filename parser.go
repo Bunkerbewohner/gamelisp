@@ -12,6 +12,7 @@ var intRegex = regexp.MustCompile("^-?[\\d,]+")
 var floatRegex = regexp.MustCompile("^-?[\\d,]+[.]\\d*")
 var symbolRegex = regexp.MustCompile("^[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
 var keywordRegex = regexp.MustCompile("^:[^0-9\\s(\\[{}\\])][^\\s(\\[{}\\])]*")
+var placeholderRegex = regexp.MustCompile(`^%\d|%&|%$`)
 
 // A parser function receives an input string and a read offset
 // to parse string representations of data or code. it returns
@@ -35,6 +36,16 @@ func Parse(input string) (Data, error) {
 	return data, nil
 }
 
+func ParseLambda(input string, offset int) (Data, int) {
+	if input[offset] != '#' {
+		panic("Invalid lambda start")
+	}
+
+	list, end := ParseList(input, offset+1)
+	list.(List).PushFront(Symbol{"lambda"})
+	return list, end
+}
+
 func ParseList(input string, offset int) (Data, int) {
 	list := CreateList()
 	start, end, readPos := getDelimeters(input, offset)
@@ -45,6 +56,9 @@ func ParseList(input string, offset int) (Data, int) {
 	} else if start == '{' {
 		// {} denotes dictionaries
 		list.PushBack(Symbol{"dict"})
+	} else if start == '<' {
+		// <> anonymous function with implicit parameters (=lambda expr)
+		list.PushBack(Symbol{"lambda"})
 	}
 
 	for readPos < len(input)-1 && input[readPos] != end {
@@ -157,6 +171,8 @@ func ParseAny(input string, offset int) (Data, int) {
 		}
 	case ':':
 		return ParseKeyword(input, offset)
+	case '#':
+		return ParseLambda(input, offset)
 	}
 
 	return ParseSymbol(input, offset)
@@ -176,6 +192,8 @@ func getDelimeters(input string, offset int) (startDelim byte, endDelim byte, re
 		endDelim = '"'
 	case '\'':
 		endDelim = '\''
+	case '<':
+		endDelim = '>'
 	default:
 		panic("Unexpected start delimeter encountered: " + string(startDelim))
 	}

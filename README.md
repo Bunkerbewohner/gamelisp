@@ -80,6 +80,24 @@ Core Functions (so far)
 Function Definition and Multiple Dispatch
 -----------------------------------------
 
+Examples:
 ````clojure
+(defn square [x] (* x 2))
 
+; Multiple Dispatch with simple pattern matching
+(defn| fib [0] 0)
+(defn| fib [1] 1)
+(defn| fib [n] (+ (fib (- n 1)) (fib (- n 2)))
+
+(defn| is-string [(x String)] true)
+(defn| is-string [x] false)
+
+; Using Anonynmous functions and implicit parameters 
+(map #(* 2 %) [1 2 3]) -> [2 4 6]
 ````
+
+TODOs:
+-----------------------------------------
+
+* Runtime Code Reloading
+* OpenGL/SDL support

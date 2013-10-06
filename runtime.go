@@ -220,6 +220,7 @@ func CreateMainContext() *Context {
 	context.symbols["fn"] = NativeFunctionB{_fn}
 	context.symbols["defn"] = NativeFunctionB{_defn}
 	context.symbols["defn|"] = NativeFunctionB{_extend_function}
+	context.symbols["lambda"] = NativeFunctionB{_lambda}
 
 	context.symbols["symbol"] = NativeFunction{_symbol}
 	context.symbols["keyword"] = NativeFunction{_keyword}

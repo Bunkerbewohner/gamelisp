@@ -29,6 +29,12 @@ func ValidateArgs(args List, expected ...[]string) {
 
 		// compare the required types for each argument
 		for i, t := range checks {
+			if t == "Function" {
+				if _, ok := args.GetElement(i).Value.(Caller); ok {
+					continue
+				}
+			}
+
 			argtype := reflect.TypeOf(args.GetElement(i).Value)
 			if argtype.Name() != t && t != "Data" {
 				partvalid = false
@@ -548,6 +554,7 @@ func _equals(args List, context *Context) Data {
 	return Bool{true}
 }
 
+// (code fn) - returns the definition of the supplied user-defined function
 func _code(args List, context *Context) Data {
 	//ValidateArgs(args, []string{"*Function"})
 	str := "{\n"
@@ -559,4 +566,66 @@ func _code(args List, context *Context) Data {
 	str += "}"
 
 	return String{str}
+}
+
+func _lambda(args List, context *Context) Data {
+	symbols := CreateList()
+	insert := func(symbol Symbol) {
+		// if the list is empty just append
+		if symbols.Len() == 0 {
+			symbols.PushBack(symbol)
+			return
+		}
+
+		// insert sorted
+		for e := symbols.Front(); e != nil; e = e.Next() {
+			lookat := e.Value.(Symbol)
+			if lookat.Equals(symbol) {
+				return
+			}
+
+			if symbol.Value == "%" {
+				symbols.InsertBefore(symbol, e)
+			}
+
+			if symbol.Value[1] < lookat.Value[1] {
+				symbols.InsertBefore(symbol, e)
+				return
+			}
+		}
+
+		// it belongs at the end
+		symbols.PushBack(symbol)
+	}
+
+	collectPlaceholders(args, insert)
+
+	params := CreateList()
+	symbols.Foreach(func(data Data, i int) {
+		if data.(Symbol).Value == "%&" {
+			params.PushBack(Symbol{"&"})
+		}
+
+		params.PushBack(data)
+	})
+
+	fndef := CreateList()
+	fndef.PushBack(Symbol{"anonymous-function-x"})
+	fndef.PushBack(params)
+	fndef.PushBack(args)
+
+	return CreateFunction(fndef, context)
+}
+
+func collectPlaceholders(data Data, callback func(Symbol)) {
+	switch t := data.(type) {
+	case List:
+		t.Foreach(func(item Data, index int) {
+			collectPlaceholders(item, callback)
+		})
+	case Symbol:
+		if placeholderRegex.MatchString(t.Value) {
+			callback(t)
+		}
+	}
 }
