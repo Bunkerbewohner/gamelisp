@@ -6,19 +6,43 @@ import "io/ioutil"
 import "strings"
 import "os"
 import "path/filepath"
+import "github.com/howeyc/fsnotify"
 
+var MainContext *Context
+
+// modules by name
 var modules map[string]*Module = make(map[string]*Module)
+
+// modules by path
+var modulesByPath map[string]*Module = make(map[string]*Module)
 var moduleSearchPaths = []string{"modules"}
+var watcher *fsnotify.Watcher
+var watcherDone chan bool
 
 type Context struct {
 	symbols map[string]Data
 	parent  *Context
+	usages  []Usage
+}
+
+type Usage struct {
+	context *Context
+	prefix  string
 }
 
 type Module struct {
 	name    string
 	source  string
 	context *Context
+}
+
+func (module *Module) Refresh() {
+	module.Reload()
+
+	// reimport this module into all usage contexts
+	for _, usage := range module.context.usages {
+		usage.context.Reimport(module.context, usage.prefix)
+	}
 }
 
 func (c *Context) String() string {
@@ -59,6 +83,19 @@ func FindModuleFile(name string) string {
 	return ""
 }
 
+func (module *Module) Reload() {
+	bytes, err := ioutil.ReadFile(module.source)
+	if err != nil {
+		panic(fmt.Sprintf("Failed to reload module %s: %s", module.name, err.Error()))
+	}
+
+	text := "(do " + string(bytes) + ""
+	_, err = EvaluateString(text, module.context)
+	if err != nil {
+		panic(err.Error())
+	}
+}
+
 func LoadModule(name string, env *Context) *Module {
 	path := FindModuleFile(name)
 	if path == "" {
@@ -80,6 +117,13 @@ func LoadModule(name string, env *Context) *Module {
 		module.context = context
 		module.source = path
 
+		err := watcher.Watch(filepath.Dir(path))
+		if err != nil {
+			fmt.Print(err.Error())
+		}
+
+		modulesByPath[path] = module
+
 		return module
 	} else {
 		panic(err.Error())
@@ -90,6 +134,7 @@ func NewContext() *Context {
 	return &Context{
 		make(map[string]Data),
 		nil,
+		make([]Usage, 0),
 	}
 }
 
@@ -116,10 +161,18 @@ func (c *Context) LookUp(symbol Symbol) Data {
 	}
 }
 
+func (c *Context) Reimport(other *Context, prefix string) {
+	for key, value := range other.symbols {
+		c.symbols[prefix+key] = value
+	}
+}
+
 func (c *Context) Import(other *Context, prefix string) {
 	for key, value := range other.symbols {
 		c.symbols[prefix+key] = value
 	}
+
+	other.usages = append(other.usages, Usage{c, prefix})
 }
 
 func EvaluateString(code string, context *Context) (Data, error) {
@@ -196,6 +249,51 @@ func Evaluate(code Data, context *Context) (Data, error) {
 	return code, nil
 }
 
+func initWatchdog() {
+	w, err := fsnotify.NewWatcher()
+	if err != nil {
+		panic(err.Error())
+	}
+
+	watcher = w
+	//watcherDone = make(chan bool)
+
+	go func() {
+		for {
+			select {
+			case ev := <-watcher.Event:
+				if ev == nil {
+					return
+				}
+
+				if ev.IsModify() && strings.HasSuffix(ev.Name, ".glisp") {
+					if module, ok := modulesByPath[ev.Name]; ok {
+						module.Refresh()
+					}
+				}
+			case err := <-watcher.Error:
+				if err == nil {
+					return
+				}
+			}
+		}
+	}()
+}
+
+func InitRuntime() {
+	initWatchdog()
+	MainContext = CreateMainContext()
+}
+
+func shutdownWatchdog() {
+	//<-watcherDone
+	watcher.Close()
+}
+
+func ShutdownRuntime() {
+	shutdownWatchdog()
+}
+
 func CreateMainContext() *Context {
 	context := NewContext()
 	context.symbols["Int"] = IntType
@@ -270,5 +368,3 @@ func CreateMainContext() *Context {
 
 	return context
 }
-
-var MainContext = CreateMainContext()

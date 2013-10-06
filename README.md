@@ -75,6 +75,7 @@ Core Functions (so far)
 (slice list startIncl [endExcl]) ; Get a slice of a list, allows negative indices
 (append list xs1 [xs2 [...]]) ; Appends lists of items to given list and returns the modified list
 (prepend list xs1 [xs2 [...]]); Analogous to append, just prepending instead
+(do expr1 expr2 ...) ; evaluate multiple expressions and return the value of the last
 ````
 
 Function Definition and Multiple Dispatch

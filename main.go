@@ -7,6 +7,7 @@ import "bufio"
 const VERSION = "0.1"
 
 func main() {
+	InitRuntime()
 	fmt.Printf("GameLISP %s\n", VERSION)
 	reader := bufio.NewReader(os.Stdin)
 
@@ -42,5 +43,6 @@ func main() {
 		}
 	}
 
+	ShutdownRuntime()
 	fmt.Printf("GAME OVER.\n")
 }
