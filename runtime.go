@@ -359,6 +359,8 @@ func CreateMainContext() *Context {
 	context.symbols[">="] = NativeFunction{_greater_than_or_equal}
 	context.symbols["=="] = NativeFunction{_equals}
 
+	context.symbols["range"] = NativeFunction{_range}
+
 	context.symbols["import"] = NativeFunctionB{_import}
 	context.symbols["$core"] = context
 	context.symbols["code"] = NativeFunction{_code}

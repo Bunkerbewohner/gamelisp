@@ -666,3 +666,30 @@ func _let(args List, context *Context) Data {
 
 	return result
 }
+
+// (range x) - collection of numbers from 0 to x
+// (range a b) - collection of numbers from a inclusive to b exclusive
+// (range a b step) - collection of numbers from a inclusive to b exclusive using given step
+func _range(args List, context *Context) Data {
+	a := 0
+	b := 0
+	step := 1
+
+	if args.Len() == 1 {
+		b = args.First().(Int).Value
+	} else if args.Len() >= 2 {
+		a = args.First().(Int).Value
+		b = args.Second().(Int).Value
+	}
+
+	if args.Len() > 2 {
+		step = args.Third().(Int).Value
+	}
+
+	numbers := CreateList()
+	for i := a; i < b; i += step {
+		numbers.PushBack(Int{i})
+	}
+
+	return numbers
+}
