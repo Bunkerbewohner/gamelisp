@@ -2,3 +2,5 @@
 
 (defn snd [x] (get x 1))
 (defn rest [xs] (slice xs 1))
+
+(defn repeat [f n] (foreach (range n) #(do % (f))))
