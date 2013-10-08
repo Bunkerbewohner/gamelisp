@@ -629,3 +629,40 @@ func collectPlaceholders(data Data, callback func(Symbol)) {
 		}
 	}
 }
+
+// (let [symbol expr symbol expr] expr*)
+func _let(args List, context *Context) Data {
+	bindings := args.First().(List)
+	subcontext := NewContext()
+	subcontext.parent = context
+
+	// when bindings is (list ...) just remove the list symbol
+	if symbol, ok := bindings.First().(Symbol); ok && symbol.Value == "list" {
+		bindings.Remove(bindings.Front())
+	}
+
+	// iterate over bindings pair-wise to create definitions
+	for e := bindings.Front(); e != nil; e = e.Next().Next() {
+		symbol := e.Value.(Symbol)
+		value, err := Evaluate(e.Next().Value.(Data), context)
+		if err != nil {
+			panic(err.Error())
+		}
+
+		subcontext.Define(symbol, value)
+	}
+
+	var result Data
+	args.Foreach(func(elem Data, i int) {
+		if i > 0 {
+			temp, err := Evaluate(elem, subcontext)
+			if err != nil {
+				panic(err.Error())
+			} else {
+				result = temp
+			}
+		}
+	})
+
+	return result
+}
