@@ -283,6 +283,7 @@ func initWatchdog() {
 func InitRuntime() {
 	initWatchdog()
 	MainContext = CreateMainContext()
+	ECS_init()
 }
 
 func shutdownWatchdog() {
@@ -291,6 +292,7 @@ func shutdownWatchdog() {
 }
 
 func ShutdownRuntime() {
+	ECS_shutdown()
 	shutdownWatchdog()
 }
 
@@ -364,6 +366,8 @@ func CreateMainContext() *Context {
 	context.symbols["import"] = NativeFunctionB{_import}
 	context.symbols["$core"] = context
 	context.symbols["code"] = NativeFunction{_code}
+
+	context.symbols["entity"] = NativeFunction{_entity}
 
 	// import aux. functions defined in gamelisp itself
 	coreModule := GetModule("$core", context)

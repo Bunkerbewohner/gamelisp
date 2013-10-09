@@ -536,3 +536,4 @@ var StringType = DataType{"String"}
 var SymbolType = DataType{"Symbol"}
 var DataTypeType = DataType{"DataType"}
 var ContextType = DataType{"Context"}
+var EntityType = DataType{"Entity"}

@@ -693,3 +693,8 @@ func _range(args List, context *Context) Data {
 
 	return numbers
 }
+
+func _entity(args List, context *Context) Data {
+	ent := NewEntity()
+	return ent
+}
