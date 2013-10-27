@@ -1,0 +1,36 @@
+(event changed [property])
+(event death)
+
+(trait Health 
+	(properties
+		:health 100
+		:max-health 100)
+	(on
+		(die (set-property :health 0))
+		(changed :health check_health)))
+
+(defn not-positive [property func] (changed property #(if (<= property 0) (func))))
+
+(defn check_health [entity health]
+	(if-not (positive health) (trigger death)))
+
+(trait Position (properties :pos [0 0 0]))
+(trait Size (properties :size [0 0 0]))
+(trait Model 
+	(properties :model_path)
+	(events
+		(tick render)))
+
+(def player 
+	(create-entity 
+		(Health 100)
+		(Position [0 0 0])
+		(Size [100 50 0])))
+
+(defevent HealthChanged :new-amount :old-amount)
+
+(subscribe player HealthChanged on-player-health-changed)
+
+(defn on-player-health-hanged [player args]
+	(print "Player health is now " (str (:new-amount args))))
+

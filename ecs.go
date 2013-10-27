@@ -1,6 +1,7 @@
 package main
 
 import "fmt"
+import "mk/Apollo/events"
 
 /* Entity Component System */
 
@@ -53,6 +54,15 @@ func NewEntity() *Entity {
 	newEntities <- ent
 	ent.id = <-ids
 	return ent
+}
+
+func (e *Entity) EventChannel() events.EventChannel {
+	// TODO: define global event channel for entity
+	return nil
+}
+
+func (e *Entity) EventSourceID() uint64 {
+	return e.id
 }
 
 func generate_entity_ids(entities chan *Entity, ids chan uint64) {

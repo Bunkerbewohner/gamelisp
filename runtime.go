@@ -7,6 +7,7 @@ import "strings"
 import "os"
 import "path/filepath"
 import "github.com/howeyc/fsnotify"
+import "mk/Apollo/events"
 
 var MainContext *Context
 
@@ -292,6 +293,9 @@ func shutdownWatchdog() {
 }
 
 func ShutdownRuntime() {
+	eventBus := MainContext.symbols["$events"].(NativeObject).Value.(*events.EventBus)
+	eventBus.Shutdown()
+
 	ECS_shutdown()
 	shutdownWatchdog()
 }
@@ -368,6 +372,11 @@ func CreateMainContext() *Context {
 	context.symbols["code"] = NativeFunction{_code}
 
 	context.symbols["entity"] = NativeFunction{_entity}
+
+	// event system
+	eventBus := new(events.EventBus)
+	eventBus.Init()
+	context.symbols["$events"] = NativeObject{eventBus}
 
 	// import aux. functions defined in gamelisp itself
 	coreModule := GetModule("$core", context)

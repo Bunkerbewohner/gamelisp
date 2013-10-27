@@ -42,6 +42,14 @@ type Bool struct {
 type Nothing struct {
 }
 
+type NativeObject struct {
+	Value interface{}
+}
+
+func (t NativeObject) String() string {
+	return "NativeObject"
+}
+
 func (t DataType) String() string {
 	return t.TypeName
 }
@@ -134,6 +142,14 @@ func MakeList(args ...Data) List {
 func CreateDict() Dict {
 	return Dict{
 		entries: make(map[Data]Data),
+	}
+}
+
+func (d Dict) GetOrDefault(key Data, defaultValue Data) Data {
+	if value, ok := d.entries[key]; ok {
+		return value
+	} else {
+		return defaultValue
 	}
 }
 
@@ -329,6 +345,10 @@ func (ls List) Map(f func(a Data, i int) Data) List {
 	return list
 }
 
+func (x NativeObject) GetType() DataType {
+	return NativeObjectType
+}
+
 func (x String) GetType() DataType {
 	return StringType
 }
@@ -384,6 +404,15 @@ func (x Function) GetType() DataType {
 //=============================================================================
 // Equality
 //=============================================================================
+
+func (x NativeObject) Equals(other Data) bool {
+	switch t := other.(type) {
+	case NativeObject:
+		return t.Value == x.Value
+	}
+
+	return false
+}
 
 func (x Int) Equals(other Data) bool {
 	switch t := other.(type) {
@@ -537,3 +566,4 @@ var SymbolType = DataType{"Symbol"}
 var DataTypeType = DataType{"DataType"}
 var ContextType = DataType{"Context"}
 var EntityType = DataType{"Entity"}
+var NativeObjectType = DataType{"NativeObject"}
