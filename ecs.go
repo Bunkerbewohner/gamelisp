@@ -25,14 +25,22 @@ func (e *Entity) Equals(other Data) bool {
 	return false
 }
 
-type Trait struct {
+func (e *Entity) Set(property string, value Data) {
+	if old, ok := e.data[property]; ok {
+		e.data[property] = value
+		// do sth with old
+		fmt.Printf(old.String())
+	} else {
+		e.data[property] = value
+	}
 }
 
 var shutdown = false
 var newEntities = make(chan *Entity)
+var ids = make(chan uint64)
 
 func ECS_init() {
-	go generate_entity_ids(newEntities)
+	go generate_entity_ids(newEntities, ids)
 }
 
 func ECS_shutdown() {
@@ -43,13 +51,17 @@ func ECS_shutdown() {
 func NewEntity() *Entity {
 	ent := new(Entity)
 	newEntities <- ent
+	ent.id = <-ids
 	return ent
 }
 
-func generate_entity_ids(entities chan *Entity) {
+func generate_entity_ids(entities chan *Entity, ids chan uint64) {
 	i := uint64(1)
 	for e := range entities {
-		e.id = i
+		if e.id == 0 {
+			ids <- i
+		}
 		i++
 	}
+	close(ids)
 }

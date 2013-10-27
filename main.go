@@ -8,7 +8,7 @@ const VERSION = "0.1"
 
 func main() {
 	InitRuntime()
-	fmt.Printf("GameLISP %s\n", VERSION)
+	fmt.Printf("Apollo %s\n", VERSION)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
