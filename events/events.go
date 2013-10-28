@@ -45,13 +45,13 @@ func (s Cancellation) EventName() string {
 
 type EventQueue struct {
 	Relay       EventChannel
-	Subscribers map[uint64]EventSource
+	Subscribers map[Subscription]EventSource
 }
 
 func NewEventQueue() *EventQueue {
 	q := new(EventQueue)
 	q.Relay = make(EventChannel)
-	q.Subscribers = make(map[uint64]EventSource, 1)
+	q.Subscribers = make(map[Subscription]EventSource, 1)
 	go q.relayEvents()
 	return q
 }
@@ -62,10 +62,10 @@ func (queue *EventQueue) relayEvents() {
 		switch t := event.(type) {
 		case Subscription:
 			// adds a new subscriber to this queue
-			queue.Subscribers[t.Subscriber.EventSourceID()] = t.Subscriber
+			queue.Subscribers[t] = t.Subscriber
 		case Cancellation:
 			// removes a subscriber from this queue
-			delete(queue.Subscribers, t.Subscriber.EventSourceID())
+			delete(queue.Subscribers, t.Subscription)
 		default:
 			// relays this event to all subscribers
 			for _, subscriber := range queue.Subscribers {
