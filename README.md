@@ -1,4 +1,4 @@
-gamelisp
+Apollo
 ========
 
 My game-oriented programming language inspired by Lisp, Go, Python, Clojure; implemented in Go. I intend to use it as a DSL for creating small 3D games using SDL2.
@@ -97,8 +97,31 @@ Examples:
 (map #(* 2 %) [1 2 3]) -> [2 4 6]
 ````
 
+Event and Entity System
+-----------------------
+
+Apollo provides a simple event system based on goroutines and channels. Every event type is processed
+in its own goroutine. Sending of events is thread-safe.
+
+````clojure
+; defines entities without any components
+(def controller (entity))
+(def player (entity))
+
+; defines a new event with one parameter ":dir"
+(defevent Move :dir)
+
+; define an event handler and assign it
+(defn on-player-move [player args] (print (str "Player moves " (first args)))
+(subscribe player :to Move :handler on-player-move)
+
+; Move event triggered by controller
+(trigger controller Move :dir "forward")
+; -> Player moves forward
+
+````
+
 TODOs:
 -----------------------------------------
 
-* Runtime Code Reloading
 * OpenGL/SDL support
