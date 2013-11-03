@@ -8,6 +8,7 @@ import "os"
 import "path/filepath"
 import "github.com/howeyc/fsnotify"
 import "mk/Apollo/events"
+import "bufio"
 
 var MainContext *Context
 
@@ -308,6 +309,45 @@ func ShutdownRuntime() {
 
 	ECS_shutdown()
 	shutdownWatchdog()
+}
+
+func REPL() {
+	fmt.Printf("Apollo %s\n", VERSION)
+	reader := bufio.NewReader(os.Stdin)
+
+	for {
+		// read commands from stdin
+		fmt.Printf("\n> ")
+		line, err := reader.ReadString('\n')
+
+		// check for exit command
+		if err != nil || (len(line) >= 4 && line[0:4] == "exit") {
+			break // EOF
+		}
+
+		// parse code into AST
+		data, err := Parse(line)
+		if err != nil {
+			fmt.Println(err.Error())
+			continue
+		} else if data == nil {
+			continue
+		}
+
+		// evaluate the expressions
+		if result, err := Evaluate(data, MainContext); err == nil {
+			if result != nil {
+				str := result.String()
+				if str != "Nothing" {
+					fmt.Printf(str)
+				}
+			}
+		} else {
+			fmt.Println(err.Error())
+		}
+	}
+
+	gamehost_Window.SetShouldClose(true)
 }
 
 func CreateMainContext() *Context {
