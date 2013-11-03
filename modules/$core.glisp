@@ -1,4 +1,10 @@
-(def GAMELISP_VERSION "0.1.0")
+(def APOLLO_VERSION "0.1.1")
+
+(def GAMEHOST (entity))
+(defevent Tick :dt)
+
+(defn gameloop [dt] (do
+	(trigger GAMEHOST Tick dt)))
 
 (defn snd [x] (get x 1))
 (defn rest [xs] (slice xs 1))

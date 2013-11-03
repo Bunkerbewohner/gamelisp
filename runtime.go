@@ -294,8 +294,8 @@ func initWatchdog() {
 
 func InitRuntime() {
 	initWatchdog()
-	MainContext = CreateMainContext()
 	ECS_init()
+	MainContext = CreateMainContext()
 }
 
 func shutdownWatchdog() {
@@ -436,6 +436,9 @@ func CreateMainContext() *Context {
 	// import aux. functions defined in gamelisp itself
 	coreModule := GetModule("$core", context)
 	context.Import(coreModule.context, "")
+
+	// graphics functions
+	context.symbols["fill-background"] = NativeFunction{fill_background}
 
 	return context
 }
