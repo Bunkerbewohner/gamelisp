@@ -164,6 +164,16 @@ func (c *Context) LookUp(symbol Symbol) Data {
 
 func (c *Context) Reimport(other *Context, prefix string) {
 	for key, value := range other.symbols {
+		if newFunction, ok := value.(*Function); ok {
+			if current, ok := c.symbols[prefix+key]; ok {
+				if currentFunction, ok := current.(*Function); ok && currentFunction.Name == newFunction.Name {
+					// replace function definition in place
+					currentFunction.Dispatchers = newFunction.Dispatchers
+				}
+
+			}
+		}
+
 		c.symbols[prefix+key] = value
 	}
 }
