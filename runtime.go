@@ -373,6 +373,11 @@ func CreateMainContext() *Context {
 
 	context.symbols["entity"] = NativeFunction{_entity}
 
+	context.symbols["defevent"] = NativeFunctionB{_defevent}
+	context.symbols["subscribe"] = NativeFunction{_subscribe}
+	context.symbols["unsubscribe"] = NativeFunction{_unsubscribe}
+	context.symbols["trigger"] = NativeFunction{_trigger}
+
 	// event system
 	eventBus := new(events.EventBus)
 	eventBus.Init()

@@ -3,6 +3,7 @@ package main
 import "container/list"
 import "fmt"
 import "bytes"
+import "mk/Apollo/events"
 
 type Data interface {
 	String() string
@@ -546,6 +547,87 @@ func (x Function) Equals(other Data) bool {
 	return false
 }
 
+//-----------------------------------------------------------------------------
+// Event related data types
+
+type UserEventDefinition struct {
+	Name      string
+	Arguments List
+}
+
+func (def *UserEventDefinition) String() string {
+	return "Event<" + def.Name + ">"
+}
+
+func (def *UserEventDefinition) Equals(other Data) bool {
+	if otherDef, ok := other.(*UserEventDefinition); ok {
+		return otherDef.Name == def.Name && otherDef.Arguments.Equals(def.Arguments)
+	}
+	return false
+}
+
+func (def *UserEventDefinition) GetType() DataType {
+	return EventType
+}
+
+//---
+
+type UserEvent struct {
+	Definition *UserEventDefinition
+	Arguments  Dict
+}
+
+func (e *UserEvent) EventName() string {
+	return e.Definition.Name
+}
+
+type UserEventHandler struct {
+	Owner   *Entity
+	Handler *Function
+
+	eventChannel events.EventChannel
+	closure      *Context
+}
+
+func NewUserEventHandler(owner *Entity, handlerFunction *Function, context *Context) *UserEventHandler {
+	handler := new(UserEventHandler)
+	handler.Owner = owner
+	handler.Handler = handlerFunction
+	handler.eventChannel = make(events.EventChannel, 100)
+	handler.closure = context
+
+	go handler.handleEvents()
+
+	return handler
+}
+
+func (handler *UserEventHandler) EventChannel() events.EventChannel {
+	return handler.eventChannel
+}
+
+func (handler *UserEventHandler) EventSourceID() uint64 {
+	return handler.Owner.id
+}
+
+func (handler *UserEventHandler) handleEvents() {
+	for event := range handler.eventChannel {
+		if event == nil {
+			close(handler.eventChannel)
+			return
+		}
+
+		switch t := event.(type) {
+		case *UserEvent:
+			args := MakeList(handler.Owner, t.Arguments)
+			handler.Handler.Call(args, handler.closure)
+		case events.EventMessage:
+			e := t.Content.(*UserEvent)
+			args := MakeList(handler.Owner, e.Arguments)
+			handler.Handler.Call(args, handler.closure)
+		}
+	}
+}
+
 //=============================================================================
 // Global Variables
 //=============================================================================
@@ -567,3 +649,4 @@ var DataTypeType = DataType{"DataType"}
 var ContextType = DataType{"Context"}
 var EntityType = DataType{"Entity"}
 var NativeObjectType = DataType{"NativeObject"}
+var EventType = DataType{"Event"}

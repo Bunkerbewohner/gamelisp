@@ -703,69 +703,16 @@ func _entity(args List, context *Context) Data {
 //-----------------------------------------------------------------------------
 // Native Functions for handling evens
 
-type UserEventDefinition struct {
-	Name      string
-	Arguments List
-}
-
-type UserEvent struct {
-	Definition *UserEventDefinition
-	Arguments  Dict
-}
-
-func (e *UserEvent) EventName() string {
-	return e.Definition.Name
-}
-
-type UserEventHandler struct {
-	Owner   *Entity
-	Handler *Function
-
-	eventChannel events.EventChannel
-	closure      *Context
-}
-
-func NewUserEventHandler(owner *Entity, handlerFunction *Function, context *Context) *UserEventHandler {
-	handler := new(UserEventHandler)
-	handler.Owner = owner
-	handler.Handler = handlerFunction
-	handler.eventChannel = make(events.EventChannel, 100)
-	handler.closure = context
-
-	return handler
-}
-
-func (handler *UserEventHandler) EventChannel() events.EventChannel {
-	return handler.eventChannel
-}
-
-func (handler *UserEventHandler) EventSourceID() uint64 {
-	return handler.Owner.id
-}
-
-func (handler *UserEventHandler) handleEvents() {
-	for event := range handler.eventChannel {
-		if event == nil {
-			close(handler.eventChannel)
-			return
-		}
-
-		switch t := event.(type) {
-		case *UserEvent:
-			args := MakeList(handler.Owner, t.Arguments)
-			handler.Handler.Call(args, handler.closure)
-		}
-	}
-}
-
 // (defevent name args...)
 // e.g. (defevent Tick :dt), (defevent HealthChanged :old-amount :new-amount), ...
-func __defevent(args List, context *Context) Data {
+func _defevent(args List, context *Context) Data {
+	name := args.First().(Symbol)
+
 	def := new(UserEventDefinition)
-	def.Name = args.First().(String).Value
+	def.Name = name.Value
 	def.Arguments = args.SliceFrom(1)
 
-	context.Define(Symbol{def.Name}, NativeObject{def})
+	context.Define(name, def)
 
 	return Nothing{}
 }
@@ -773,7 +720,7 @@ func __defevent(args List, context *Context) Data {
 // (trigger source Event :key1 value1 :key2 value2 ...)
 // (trigger source Event value1 value2)
 func _trigger(args List, context *Context) Data {
-	eventDef := context.LookUp(args.Second().(Symbol)).(NativeObject).Value.(*UserEventDefinition)
+	eventDef := args.Second().(*UserEventDefinition)
 	eventBus := context.LookUp(Symbol{"$events"}).(NativeObject).Value.(*events.EventBus)
 
 	event := new(UserEvent)
@@ -791,7 +738,7 @@ func _subscribe(args List, context *Context) Data {
 	def := _dict(args.SliceFrom(1), context).(Dict)
 	entity := args.First().(*Entity)
 
-	event := def.GetOrDefault(Keyword{":to"}, nil).(NativeObject).Value.(*UserEventDefinition)
+	event := def.GetOrDefault(Keyword{":to"}, nil).(*UserEventDefinition)
 	fn := def.GetOrDefault(Keyword{":handler"}, nil).(*Function)
 	by := def.GetOrDefault(Keyword{":by"}, nil)
 	eventBus := context.LookUp(Symbol{"$events"}).(NativeObject).Value.(*events.EventBus)
@@ -804,7 +751,7 @@ func _subscribe(args List, context *Context) Data {
 		eventBus.Subscribe(handler, event.Name, nil)
 	}
 
-	return nil
+	return Nothing{}
 }
 
 // (unsubscribe entity :to Event [:by entity] :handler handler)
@@ -812,7 +759,7 @@ func _unsubscribe(args List, context *Context) Data {
 	def := _dict(args.SliceFrom(1), context).(Dict)
 	entity := args.First().(*Entity)
 
-	event := def.GetOrDefault(Keyword{":to"}, nil).(NativeObject).Value.(*UserEventDefinition)
+	event := def.GetOrDefault(Keyword{":to"}, nil).(*UserEventDefinition)
 	fn := def.GetOrDefault(Keyword{":handler"}, nil).(*Function)
 	by := def.GetOrDefault(Keyword{":by"}, nil)
 	eventBus := context.LookUp(Symbol{"$events"}).(NativeObject).Value.(*events.EventBus)
@@ -825,5 +772,5 @@ func _unsubscribe(args List, context *Context) Data {
 		eventBus.Unsubscribe(handler, event.Name, nil)
 	}
 
-	return nil
+	return Nothing{}
 }

@@ -152,11 +152,11 @@ func (bus *EventBus) Run() {
 			}
 		case event, ok := <-bus.eventRequests:
 			if ok {
-				if generalQueue, ok := getQueue(bus, event.EventName(), nil); ok {
+				if generalQueue, ok := getQueue(bus, event.Content.EventName(), nil); ok {
 					generalQueue.Relay <- event
 				}
 
-				if specificQueue, ok := getQueue(bus, event.EventName(), event.Source); ok {
+				if specificQueue, ok := getQueue(bus, event.Content.EventName(), event.Source); ok {
 					specificQueue.Relay <- event
 				}
 			}
