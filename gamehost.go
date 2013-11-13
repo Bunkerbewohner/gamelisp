@@ -27,6 +27,8 @@ func RunGamehost() {
 	glu.LookAt(0, 1.5, 5, 0, 0, 0, 0, 1, 0)
 	frame := 0
 
+	EvaluateString("(trigger GAMEHOST Init!)", MainContext)
+
 	gamehost_world.Create(CreateCube(0, 0, 0))
 
 	for !gamehost_Window.ShouldClose() {
@@ -43,4 +45,6 @@ func RunGamehost() {
 		gamehost_Window.SwapBuffers()
 		glfw.PollEvents()
 	}
+
+	EvaluateString("(trigger GAMEHOST Shutdown!)", MainContext)
 }

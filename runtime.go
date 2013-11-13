@@ -9,6 +9,7 @@ import "path/filepath"
 import "github.com/howeyc/fsnotify"
 import "mk/Apollo/events"
 import "bufio"
+import gopath "path/filepath"
 
 var MainContext *Context
 
@@ -17,7 +18,7 @@ var modules map[string]*Module = make(map[string]*Module)
 
 // modules by path
 var modulesByPath map[string]*Module = make(map[string]*Module)
-var moduleSearchPaths = []string{"modules"}
+var moduleSearchPaths = []string{"modules", "."}
 var watcher *fsnotify.Watcher
 var watcherDone chan bool
 
@@ -59,6 +60,11 @@ func (c *Context) GetType() DataType {
 	return ContextType
 }
 
+func (c *Context) GetEventBus() *events.EventBus {
+	eventBus := c.LookUp(Symbol{"$events"}).(NativeObject).Value.(*events.EventBus)
+	return eventBus
+}
+
 // Gets a module by name. Loads the module beforehand if necessary
 func GetModule(name string, env *Context) *Module {
 	module, ok := modules[name]
@@ -71,6 +77,10 @@ func GetModule(name string, env *Context) *Module {
 }
 
 func FindModuleFile(name string) string {
+	if gopath.IsAbs(name) {
+		return name
+	}
+
 	for _, modulePath := range moduleSearchPaths {
 		path := modulePath + "/" + strings.Replace(name, ".", "/", -1) + ".glisp"
 		absPath, err := filepath.Abs(path)
@@ -312,7 +322,6 @@ func ShutdownRuntime() {
 }
 
 func REPL() {
-	fmt.Printf("Apollo %s\n", VERSION)
 	reader := bufio.NewReader(os.Stdin)
 
 	for {
@@ -427,6 +436,7 @@ func CreateMainContext() *Context {
 	context.symbols["subscribe"] = NativeFunction{_subscribe}
 	context.symbols["unsubscribe"] = NativeFunction{_unsubscribe}
 	context.symbols["trigger"] = NativeFunction{_trigger}
+	context.symbols["on"] = NativeFunction{_on}
 
 	// event system
 	eventBus := new(events.EventBus)

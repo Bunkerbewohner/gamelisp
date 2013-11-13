@@ -1,0 +1,7 @@
+(def num_blocks 100)
+
+; Called before the gameloop
+(on Init! (fn [entity args] (print "Starting blocks" num_blocks)))
+
+; Called after the gameloop
+(on Shutdown! (fn [entity args] (print "Exiting blocks")))

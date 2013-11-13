@@ -733,6 +733,18 @@ func _trigger(args List, context *Context) Data {
 	return Nothing{}
 }
 
+// (on event callback)
+func _on(args List, context *Context) Data {
+	event := args.First().(*UserEventDefinition)
+	callback := args.Second().(*Function)
+	eventBus := context.GetEventBus()
+
+	handler := NewUserEventHandler(NewEntity(), callback, context)
+	eventBus.Subscribe(handler, event.Name, nil)
+
+	return Nothing{}
+}
+
 // (subscribe entity :to Event [:by entity] :handler handler)
 func _subscribe(args List, context *Context) Data {
 	def := _dict(args.SliceFrom(1), context).(Dict)
