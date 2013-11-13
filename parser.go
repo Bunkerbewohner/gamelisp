@@ -150,10 +150,25 @@ func ParseNumber(input string, offset int) (Data, int) {
 
 // Parses any data value
 func ParseAny(input string, offset int) (Data, int) {
+	input_length := len(input)
+
 	// ignore whitespace
 	for input[offset] == ' ' || input[offset] == '\t' ||
 		input[offset] == '\r' || input[offset] == '\n' {
 		offset++
+
+		if input[offset] == ';' {
+			for input[offset] != '\n' && input[offset] != '\r' {
+				offset++
+				if offset >= input_length {
+					break
+				}
+			}
+		}
+
+		if offset >= input_length {
+			return Nothing{}, offset
+		}
 	}
 
 	switch input[offset] {
