@@ -48,3 +48,64 @@ func fill_background(args List, context *Context) Data {
 
 	return Nothing{}
 }
+
+//--------------------------------
+// Cube / World Rendering
+
+type Vertex3D struct {
+	X, Y, Z float64
+}
+
+func (v Vertex3D) Similar(other Vertex3D) bool {
+	dx := other.X - v.X
+	dy := other.Y - v.Y
+	dz := other.Z - v.Z
+
+	return (dx*dx + dy*dy + dz*dz) < 0.5
+}
+
+type Vertex4D struct {
+	Vertex3D
+	W float64
+}
+
+func (cube *Cube) Render() {
+	x, y, z := cube.Position.X, cube.Position.Y, cube.Position.Z
+
+	gl.Begin(gl.QUADS)
+
+	gl.Color3d(0.5-(x/50), 0.5-(y/50), 0.5-(z/50))
+
+	// Front Side
+	gl.TexCoord2f(0, 0)
+	gl.Vertex3d(x-0.5, y-0.5, z+0.5)
+	gl.TexCoord2f(1, 0)
+	gl.Vertex3d(x+0.5, y-0.5, z+0.5)
+	gl.TexCoord2f(1, 1)
+	gl.Vertex3d(x+0.5, y+0.5, z+0.5)
+	gl.TexCoord2f(0, 1)
+	gl.Vertex3d(x-0.5, y+0.5, z+0.5)
+
+	// Left Side
+	gl.Color3d(0.5-(x/20), 0.5-(y/20), 0.5-(z/20))
+	gl.TexCoord2f(0, 0)
+	gl.Vertex3d(x-0.5, y-0.5, z-0.5)
+	gl.TexCoord2f(1, 0)
+	gl.Vertex3d(x-0.5, y-0.5, z+0.5)
+	gl.TexCoord2f(1, 1)
+	gl.Vertex3d(x-0.5, y+0.5, z+0.5)
+	gl.TexCoord2f(0, 1)
+	gl.Vertex3d(x-0.5, y+0.5, z-0.5)
+
+	gl.End()
+}
+
+func (world *World) Render() {
+	for _, cube := range world.cubePool {
+		if !cube.used {
+			continue
+		}
+
+		cube.Render()
+	}
+}
